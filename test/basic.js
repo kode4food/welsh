@@ -67,4 +67,22 @@ describe("Welsh", function () {
     }).to.throw(Error);
     done();
   });
+  
+  it("should be able to continue", function (done) {
+    var p = welsh(function (result) {
+      expect(result).to.equal('Bob');
+      return "Hello, " + result + "!";
+    });
+    
+    p.resolve('Bob');
+    p.then(function (result) {
+      expect(result).to.equal('Hello, Bob!');
+      return result + ' ***';
+    });
+    
+    p.then(function (result) {
+      expect(result).to.equal('Hello, Bob! ***');
+      done();
+    });
+  });
 });

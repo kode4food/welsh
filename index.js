@@ -71,7 +71,6 @@ function welsh(onResolved, onRejected) {
 
     if ( state ) {
       proceed(pendingResult);
-      pendingResult = undefined;
     }
     return welshInterface;
   }
@@ -94,6 +93,7 @@ function welsh(onResolved, onRejected) {
       }
     }
     while ( head );
+    pendingResult = result;
   }
 
   function thenLinker(result) {
