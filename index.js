@@ -1,3 +1,11 @@
+/*
+ * Welsh (Promises, but not really)
+ * Licensed under the MIT License
+ * see LICENSE.md
+ *
+ * @author Thomas S. Bradford (kode4food.it) 
+ */
+ 
 "use strict";
 
 var stateIndexes = [undefined, 0, 1];
@@ -58,8 +66,7 @@ function welsh(onResolved, onRejected) {
   		head = tail = item;
   	}
     else {
-      tail.next = item;
-      tail = item;
+      tail = tail.next = item;
     }
 
     if ( state ) {
