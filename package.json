@@ -1,0 +1,33 @@
+{
+  "name": "welsh",
+  "version": "1.0.0",
+  "description": "Promises, but not really",
+  "main": "index.js",
+  "scripts": {
+    "test": "gulp test"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git@github.com:kode4food/welsh"
+  },
+  "keywords": [
+    "node",
+    "javascript",
+    "callbacks",
+    "promises"
+  ],
+  "author": "Thomas S. Bradford <thom@kode4food.it>",
+  "license": "MIT",
+  "devDependencies": {
+    "chai": "^3.0.0",
+    "gulp": "^3.9.0",
+    "gulp-istanbul": "^0.10.0",
+    "gulp-istanbul-enforcer": "^1.0.3",
+    "gulp-jshint": "^1.11.0",
+    "gulp-mocha": "^2.1.2",
+    "mocha": "^2.2.5",
+    "plato": "^1.5.0"
+  },
+  "dependencies": {
+  }
+}
