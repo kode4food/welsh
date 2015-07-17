@@ -1,6 +1,6 @@
 {
   "name": "welsh",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Promises, but not really",
   "main": "index.js",
   "scripts": {
