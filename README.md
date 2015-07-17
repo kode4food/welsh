@@ -2,7 +2,13 @@
 
 Welsh is a lightweight Promise-like library.  In reality it works more like Twisted's Deferreds, but whatever.  Fuck, it might even be Promises A+ compatible, but I'm too lazy to check.  What do you expect?  I wrote it on the train this morning!
 
-Here's how you use it:
+Here's how you use it.  First, npm install it:
+
+```bash
+npm install welsh --save
+```
+
+Then, write code:
 
 ```javascript
 var welsh = require('welsh');
