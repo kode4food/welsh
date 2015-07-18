@@ -1,6 +1,6 @@
 # Welsh (Promises, but not really)
 
-Welsh is a lightweight Promise-like library.  In reality it works more like Twisted's Deferreds, but whatever.  Seriously, don't treat this as a compliant Promises implementation, because it isn't.  I didn't even read the spec.
+Welsh is a lightweight Promise-like library.  In reality it works more like [Twisted's Deferreds](https://twistedmatrix.com/documents/14.0.1/core/howto/defer.html), but whatever.  Seriously, don't treat this as a compliant Promises implementation, because it isn't.  I didn't even read the spec.
 
 Here's how you use it.  First, npm install it:
 
