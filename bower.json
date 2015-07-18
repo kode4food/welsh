@@ -1,0 +1,34 @@
+{
+  "name": "welsh",
+  "version": "1.2.0",
+  "description": "Promises, but not really",
+  "authors": ["Thomas S. Bradford"],
+  "main": "build/welsh.min.js",
+  "license": "MIT",
+  "keywords": [
+    "javascript",
+    "async",
+    "callbacks",
+    "promises",
+    "futures",
+    "deferred"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git@github.com:kode4food/welsh.git"
+  },
+  "ignore": [
+    "browserify.js",
+    "test",
+    ".gitignore",
+    ".npmignore",
+    ".editorconfig",
+    ".jshintrc",
+    "bower.json",
+    "index.js",
+    "package.json",
+    "README.md"
+  ],
+  "dependencies": { },
+  "devDependencies": { }
+}

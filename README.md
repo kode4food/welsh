@@ -24,7 +24,7 @@ p.resolve("Bill");
 
 Of course, the Functions in your chain can also return Welsh Promises.  You can also call reject() and do the whole onFulfilled, onRejected thing when you add functions to the chain.  Just check the code in `test/*.js` to see what I mean.
 
-Maybe in the next version, I'll even Browserify it, but not sure why I should.
+You can also install it with Bower using `bower install welsh`.  Though honestly, I haven't tested it and don't plan to.  I'd love pull requests though!
 
 ## License (MIT License)
 Copyright (c) 2015 Thomas S. Bradford
