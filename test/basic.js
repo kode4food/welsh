@@ -8,6 +8,8 @@ var welsh = require('../index');
 describe("Welsh", function () {
   it("should work", function (done) {
     welsh(function (resolve, reject) {
+      expect(resolve).to.be.a('function');
+      expect(reject).to.be.a('function');
       resolve('bill');
     }).then(function (result) {
       expect(result).to.equal('bill');
