@@ -20,14 +20,14 @@ var pkg = require('./package.json');
 
 var reportDir = './report';
 var ignoreFiles = [
-  '!build/**/*', '!coverage/**/*', '!report/**/*', '!node_modules/**/*'
+  '!dist/**/*', '!coverage/**/*', '!report/**/*', '!node_modules/**/*'
 ];
 var sourceFiles = ['**/*.js'].concat(ignoreFiles);
 var reportFiles = ['*.js', 'lib/**/*.js', 'test/**/*.js'];
 var testFiles = ['test/*.js'];
 
 var browserSourceFile = "./browserify.js";
-var browserTargetDir = "./build/";
+var browserTargetDir = "./dist/";
 var browserTargetFile = "welsh.js";
 
 var preamble = [
