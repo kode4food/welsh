@@ -76,7 +76,7 @@ function welsh(onResolved, onRejected) {
 
   function proceed(result) {
     running = true;
-    if ( isPromise(result) ) {
+    if ( isDeferred(result) ) {
       result.then(resolvedLinker, rejectedLinker);
       return;
     }
@@ -96,7 +96,7 @@ function welsh(onResolved, onRejected) {
         result = err;
         state = rejected;
       }
-      if ( isPromise(result) ) {
+      if ( isDeferred(result) ) {
         result.then(resolvedLinker, rejectedLinker);
         return;
       }
@@ -122,10 +122,11 @@ function welsh(onResolved, onRejected) {
     throw result;      
   }
   
-  function isPromise(value) {
+  function isDeferred(value) {
     return typeof value === 'object' && value !== null &&
            typeof value.then === 'function';
   }
 }
 
 module.exports = welsh;
+welsh.Deferred = welsh;
