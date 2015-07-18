@@ -13,13 +13,13 @@ Then, write code:
 ```javascript
 var welsh = require('welsh');
 
-var p = welsh(function (result) {
+welsh(function (resolve, reject) {
+  resolve("Bill");
+}).then(function (result) {
   return 'Hello, ' + result + '!';
 }).then(function (result) {
   console.log(result);
 });
-
-p.resolve("Bill");
 ```
 
 Of course, the Functions in your chain can also return Welsh Promises.  You can also call reject() and do the whole onFulfilled, onRejected thing when you add functions to the chain.  Just check the code in `test/*.js` to see what I mean.
