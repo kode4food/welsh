@@ -60,7 +60,7 @@ function welsh(onResolved, onRejected) {
       onRejected = undefined;
     }
 
-    var item = { value: [onResolved, onRejected] };
+    var item = { 1: onResolved, 2: onRejected };
     if ( !tail ) {
       head = tail = item;
     }
@@ -82,7 +82,7 @@ function welsh(onResolved, onRejected) {
     }
 
     do {
-      var callback = head.value[state - 1];
+      var callback = head[state];
       head = head.next || (tail = null);
       if ( !callback ) {
         continue;
