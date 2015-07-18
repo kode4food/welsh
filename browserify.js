@@ -1,3 +1,3 @@
 /* global Window */
 "use strict";
-Window.welsh = require('./index');
+window.welsh = require('./index');

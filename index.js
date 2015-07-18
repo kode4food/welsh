@@ -15,7 +15,7 @@ var rejected = 2;
 var nodeProcess = typeof process !== 'undefined' ? process : {};
 
 /* istanbul ignore next */
-var nextTick = nodeProcess.nextTick || setImmediate || setTimeout;
+var nextTick = nodeProcess.nextTick || setTimeout;
 
 function welsh(onResolved, onRejected) {
   var state, head, tail, pendingResult, running;
