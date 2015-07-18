@@ -7,7 +7,9 @@ var welsh = require('../index');
 
 describe("Welsh", function () {
   it("should work", function (done) {
-    var p = welsh(function (result) {
+    welsh(function (resolve, reject) {
+      resolve('bill');
+    }).then(function (result) {
       expect(result).to.equal('bill');
       return 'hello ' + result;
     }).then(function (result) {
@@ -31,8 +33,6 @@ describe("Welsh", function () {
       expect(result).to.equal('///***"---hello bill---"***\\\\\\');
       done();
     });
-
-    p.resolve('bill');
   });
 
   it("should handle exceptions", function (done) {
@@ -73,7 +73,7 @@ describe("Welsh", function () {
   });
   
   it("should be able to continue", function (done) {
-    var p = welsh(function (result) {
+    var p = welsh().then(function (result) {
       expect(result).to.equal('Bob');
       return "Hello, " + result + "!";
     });

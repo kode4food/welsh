@@ -8,7 +8,7 @@
  
 "use strict";
 
-var resolved = 1;
+var fulfilled = 1;
 var rejected = 2;
 
 /* istanbul ignore next */
@@ -17,20 +17,22 @@ var nodeProcess = typeof process !== 'undefined' ? process : {};
 /* istanbul ignore next */
 var nextTick = nodeProcess.nextTick || setTimeout;
 
-function welsh(onResolved, onRejected) {
+function welsh(executor) {
   var state, head, tail, pendingResult, running;
-
-  if ( onResolved || onRejected ) {
-    appendThen(onResolved, onRejected);
-  }
 
   var welshInterface = {
     then: appendThen,
-    catch: function (onRejected) { return appendThen(undefined, onRejected); },
-    resolve: function (result) { return start(resolved, result); },
-    reject: function (error) { return start(rejected, error); }
+    catch: appendCatch,
+    resolve: resolve,
+    reject: reject
   };
 
+  if ( typeof executor === 'function' ) {
+    nextTick(function () {
+      executor(resolve, reject);
+    });  
+  }
+  
   return welshInterface;
 
   function start(newState, result) {
@@ -40,6 +42,18 @@ function welsh(onResolved, onRejected) {
     state = newState;
     queueResult(result);
     return welshInterface;
+  }
+  
+  function appendCatch(onRejected) {
+    return appendThen(undefined, onRejected);
+  }
+  
+  function resolve(result) {
+    return start(fulfilled, result);
+  }
+  
+  function reject(reason) {
+    return start(rejected, reason);
   }
 
   function queueResult(result) {
@@ -52,15 +66,15 @@ function welsh(onResolved, onRejected) {
     }
   }
 
-  function appendThen(onResolved, onRejected) {
-    if ( typeof onResolved !== 'function' ) {
-      onResolved = undefined;
+  function appendThen(onFulfilled, onRejected) {
+    if ( typeof onFulfilled !== 'function' ) {
+      onFulfilled = undefined;
     }
     if ( typeof onRejected !== 'function' ) {
       onRejected = undefined;
     }
 
-    var item = { 1: onResolved, 2: onRejected };
+    var item = { 1: onFulfilled, 2: onRejected };
     if ( !tail ) {
       head = tail = item;
     }
@@ -71,13 +85,14 @@ function welsh(onResolved, onRejected) {
     if ( state && !running ) {
       proceed(pendingResult);
     }
+    
     return welshInterface;
   }
 
   function proceed(result) {
     running = true;
     if ( isDeferred(result) ) {
-      result.then(resolvedLinker, rejectedLinker);
+      result.then(fulfilledLinker, rejectedLinker);
       return;
     }
 
@@ -90,14 +105,14 @@ function welsh(onResolved, onRejected) {
 
       try {
         result = callback(result);
-        state = resolved;
+        state = fulfilled;
       }
-      catch ( err ) {
-        result = err;
+      catch ( reason ) {
+        result = reason;
         state = rejected;
       }
       if ( isDeferred(result) ) {
-        result.then(resolvedLinker, rejectedLinker);
+        result.then(fulfilledLinker, rejectedLinker);
         return;
       }
     }
@@ -106,9 +121,9 @@ function welsh(onResolved, onRejected) {
     running = false;
   }
 
-  function resolvedLinker(result) {
+  function fulfilledLinker(result) {
     nextTick(function () {
-      state = resolved;
+      state = fulfilled;
       queueResult(result);
     });
     return result;      
