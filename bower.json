@@ -1,9 +1,9 @@
 {
   "name": "welsh",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "description": "Promises, but not really",
   "authors": ["Thomas S. Bradford"],
-  "main": "build/welsh.min.js",
+  "main": "dist/welsh.min.js",
   "license": "MIT",
   "keywords": [
     "javascript",
