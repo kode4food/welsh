@@ -1,6 +1,6 @@
 # Welsh (Promises, but not really)
 
-Welsh is a lightweight Promise-like library.  In reality it works more like Twisted's Deferreds, but whatever.  Fuck, it might even be Promises A+ compatible, but I'm too lazy to check.  What do you expect?  I wrote it on the train this morning!
+Welsh is a lightweight Promise-like library.  In reality it works more like Twisted's Deferreds, but whatever.  Seriously, don't treat this as a compliant Promises implementation, because it isn't.  I didn't even read the spec.
 
 Here's how you use it.  First, npm install it:
 
@@ -25,8 +25,6 @@ p.resolve("Bill");
 Of course, the Functions in your chain can also return Welsh Promises.  You can also call reject() and do the whole onFulfilled, onRejected thing when you add functions to the chain.  Just check the code in `test/*.js` to see what I mean.
 
 Maybe in the next version, I'll even Browserify it, but not sure why I should.
-
-But seriously, don't treat this as a compliant Promises implementation.  I didn't even read the spec.
 
 ## License (MIT License)
 Copyright (c) 2015 Thomas S. Bradford
