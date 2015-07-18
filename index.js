@@ -19,7 +19,7 @@ var nodeProcess = typeof process !== 'undefined' ? process : {};
 var nextTick = nodeProcess.nextTick || setImmediate || setTimeout;
 
 function welsh(onResolved, onRejected) {
-  var state, head, tail, stateIndex, pendingResult;
+  var state, head, tail, stateIndex, pendingResult, running;
 
   if ( onResolved || onRejected ) {
     appendThen(onResolved, onRejected);
@@ -50,6 +50,7 @@ function welsh(onResolved, onRejected) {
     }
     else {
       pendingResult = result;
+      running = false;
     }
   }
 
@@ -69,13 +70,14 @@ function welsh(onResolved, onRejected) {
       tail = tail.next = item;
     }
 
-    if ( state ) {
+    if ( state && !running ) {
       proceed(pendingResult);
     }
     return welshInterface;
   }
 
   function proceed(result) {
+    running = true;
     if ( isPromise(result) ) {
       result.then(thenLinker, thenLinker);
       return;
@@ -94,6 +96,7 @@ function welsh(onResolved, onRejected) {
     }
     while ( head );
     pendingResult = result;
+    running = false;
   }
 
   function thenLinker(result) {

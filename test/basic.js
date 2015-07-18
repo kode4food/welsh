@@ -85,4 +85,25 @@ describe("Welsh", function () {
       done();
     });
   });
+  
+  it("should allow re-entrant 'then'", function (done) {
+    var p = welsh();
+    p.then(function (result) {
+      expect(result).to.equal('Bill');
+      p.then(function (result) {
+        expect(result).to.equal("Hello, Bill! How are you?");
+        return result + " I'm fine!";
+      });
+      return 'Hello, ' + result + '!';
+    }).then(function (result) {
+      expect(result).to.equal("Hello, Bill!");
+      return result + " How are you?";
+    });
+    
+    p.resolve('Bill');
+    p.then(function (result) {
+      expect(result).to.equal("Hello, Bill! How are you? I'm fine!");
+      done();
+    });
+  });
 });
