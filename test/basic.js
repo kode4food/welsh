@@ -38,7 +38,7 @@ describe("Welsh", function () {
   it("should handle exceptions", function (done) {
     var p = welsh().catch(function (err) {
       expect(err).to.equal("an error!");
-      return 'totally ' + err;
+      throw 'totally ' + err;
     }).then(/* istanbul ignore next */ function () {
       // shouldn't be called
       expect(true).to.equal(false);
