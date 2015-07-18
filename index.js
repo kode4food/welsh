@@ -24,9 +24,6 @@ function welsh(onResolved, onRejected) {
     appendThen(onResolved, onRejected);
   }
 
-  var resolvedLinker = createLinker(resolved);
-  var rejectedLinker = createLinker(rejected);
-  
   var welshInterface = {
     then: appendThen,
     catch: function (onRejected) { return appendThen(undefined, onRejected); },
@@ -87,19 +84,21 @@ function welsh(onResolved, onRejected) {
     do {
       var callback = head.value[state - 1];
       head = head.next || (tail = null);
-      if ( callback ) {
-        try {
-          result = callback(result);
-          state = resolved;
-        }
-        catch ( err ) {
-          result = err;
-          state = rejected;
-        }
-        if ( isPromise(result) ) {
-          result.then(resolvedLinker, rejectedLinker);
-          return;
-        }
+      if ( !callback ) {
+        continue;
+      }
+
+      try {
+        result = callback(result);
+        state = resolved;
+      }
+      catch ( err ) {
+        result = err;
+        state = rejected;
+      }
+      if ( isPromise(result) ) {
+        result.then(resolvedLinker, rejectedLinker);
+        return;
       }
     }
     while ( head );
@@ -107,14 +106,20 @@ function welsh(onResolved, onRejected) {
     running = false;
   }
 
-  function createLinker(linkedState) {
-    return function (result) {
-      nextTick(function () {
-        state = linkedState;
-        queueResult(result);
-      });
-      return result;      
-    };
+  function resolvedLinker(result) {
+    nextTick(function () {
+      state = resolved;
+      queueResult(result);
+    });
+    return result;      
+  }
+  
+  function rejectedLinker(result) {
+    nextTick(function () {
+      state = rejected;
+      queueResult(result);
+    });
+    throw result;      
   }
   
   function isPromise(value) {

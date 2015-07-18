@@ -13,7 +13,7 @@ describe("Welsh", function () {
     }).then(function (result) {
       expect(result).to.equal('hello bill');
       return '"---' + result + '---"';
-    }).then(function (result) {
+    }).then(/* fall through */).then(function (result) {
       expect(result).to.equal('"---hello bill---"');
       var np = welsh();
       setTimeout(function () {
@@ -38,12 +38,16 @@ describe("Welsh", function () {
   it("should handle exceptions", function (done) {
     var p = welsh().catch(function (err) {
       expect(err).to.equal("an error!");
-      throw 'totally ' + err;
-    }).then(/* istanbul ignore next */ function () {
-      // shouldn't be called
-      expect(true).to.equal(false);
+      return 'totally ' + err;
+    }).then(function (result) {
+      expect(result).to.equal("totally an error!");
+      var p = welsh();
+      setTimeout(function () {
+        p.reject(result + ' later');
+      }, 100);
+      return p;
     }).catch(function (err) {
-      expect(err).to.equal("totally an error!");
+      expect(err).to.equal("totally an error! later");
       done();
     });
 
