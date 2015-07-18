@@ -63,9 +63,9 @@ function welsh(onResolved, onRejected) {
     }
 
     var item = { value: [onResolved, onRejected] };
-  	if ( !tail ) {
-  		head = tail = item;
-  	}
+    if ( !tail ) {
+      head = tail = item;
+    }
     else {
       tail = tail.next = item;
     }
