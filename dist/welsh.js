@@ -219,11 +219,6 @@ var createCallQueue = require('./callQueue').createCallQueue;
 
 var fulfilledState = 1;
 var rejectedState = 2;
-var methods = [undefined, 'resolve', 'reject'];
-
-function isPromise(value) {
-  return (isObject(value) || isFunction(value)) && isFunction(value.then);
-}
 
 function isObject(value) {
   return typeof value === 'object' && value !== null;
@@ -233,50 +228,49 @@ function isFunction(value) {
   return typeof value === 'function';
 }
 
-function findInArray(arr, value) {
-  for ( var i = arr.length; i--; ) {
-    if ( arr[i] === value ) {
-      return true;
-    }
+function getThenFunction(value) {
+  if ( (isObject(value) || isFunction(value)) && isFunction(value.then) ) {
+    return value.then.bind(value);
   }
-  return false;
+  return null;
 }
 
-function resolveIdentity(result) {
-  return result;
-}
-
-function rejectIdentity(reason) {
-  throw reason;
-}
-
-function createWelshPromise(onFulfilled, onRejected, parentThens) {
-  var state, settledResult, thenables = [];
+function createWelshPromise(executor) {
+  var state, settledResult, pending = [];
   var queueCall = createCallQueue();
 
-  parentThens = parentThens ? parentThens.concat(appendThen) : [appendThen];
-
-  return {
+  var welshInterface = {
     resolve: resolve,
     reject: reject,
-    then: appendThen,
-    catch: appendCatch,
-    finally: appendFinally
+    then: createThen,
+    catch: createCatch
   };
 
+  if ( isFunction(executor) ) {
+    try {
+      doResolve(executor, resolve, reject);
+    }
+    catch ( err ) {
+      reject(err);
+    }
+  }
+  return welshInterface;
+
   function resolve(result) {
-    if ( state ) {
+    if ( state ) { return; }
+    if ( welshInterface === result ) {
+      reject(new TypeError("Um, yeah, you can't do that"));
       return;
     }
     try {
-      if ( isPromise(result) ) {
-        resolvePromise(result);
+      var then = getThenFunction(result);
+      if ( then ) {
+        doResolve(then, resolve, reject);
         return;
       }
-      if ( isFunction(onFulfilled) ) {
-        result = onFulfilled(result);
-      }
-      fulfillWith(result);
+      state = fulfilledState;
+      settledResult = result;
+      queueCall(notifyPending);
     }
     catch ( err ) {
       reject(err);
@@ -284,146 +278,107 @@ function createWelshPromise(onFulfilled, onRejected, parentThens) {
   }
 
   function reject(reason) {
-    if ( state ) {
-      return;
-    }
-    try {
-      if ( isFunction(onRejected) ) {
-        reason = onRejected(reason);
-        fulfillWith(reason);
-      }
-      else {
-        rejectWith(reason);
-      }
-    }
-    catch ( err ) {
-      rejectWith(err);
-    }
+    if ( state ) { return; }
+    state = rejectedState;
+    settledResult = reason;
+    queueCall(notifyPending);
   }
 
-  function resolvePromise(promise) {
+  function doResolve(executor, onFulfilled, onRejected) {
     var done;
     try {
-      var then = promise.then;
-      if ( findInArray(parentThens, then) ) {
-        reject(new TypeError("Um, yeah, you can't do that"));
-        return;
-      }
-      promise.then(wrappedResolve, wrappedReject);
+      executor(wrappedResolve, wrappedReject);
     }
     catch ( err ) {
-      if ( done ) {
-        return;
-      }
-      reject(err);
+      if ( done ) { return; }
+      onRejected(err);
     }
 
     function wrappedResolve(result) {
-      if ( done ) {
-        return;
-      }
+      if ( done ) { return; }
       done = true;
-      resolve(result);
+      onFulfilled(result);
     }
 
     function wrappedReject(reason) {
-      if ( done ) {
-        return;
-      }
+      if ( done ) { return; }
       done = true;
-      reject(reason);
+      onRejected(reason);
     }
   }
 
-  function fulfillWith(value) {
-    state = fulfilledState;
-    settledResult = value;
-    queueCall(notifyThenables);
+  function createCatch(onRejected) {
+    return createThen(undefined, onRejected);
   }
 
-  function rejectWith(reason) {
-    state = rejectedState;
-    settledResult = reason;
-    queueCall(notifyThenables);
-  }
-
-  function appendCatch(onRejected) {
-    return appendThen(undefined, onRejected);
-  }
-
-  function appendFinally(onFinally) {
-    return appendThen(onFinally, onFinally);
-  }
-
-  function appendThen(onFulfilled, onRejected) {
-    if ( !isFunction(onFulfilled) ) {
-      onFulfilled = resolveIdentity;
+  function addPending(onFulfilled, onRejected) {
+    if ( !state ) {
+      pending.push([undefined, onFulfilled, onRejected]);
+      return;
     }
-    if ( !isFunction(onRejected) ) {
-      onRejected = rejectIdentity;
-    }
-    var promise = createWelshPromise(onFulfilled, onRejected, parentThens);
-
-    thenables.push(promise);
-
-    if ( state ) {
-      queueCall(notifyThenables);
-    }
-
-    return {
-      then: promise.then, catch: promise.catch, finally: promise.finally
-    };
+    queueCall(function () {
+      (state === fulfilledState ? onFulfilled : onRejected)(settledResult);
+    });
   }
 
-  function notifyThenables() {
-    var workingSet = thenables;
-    thenables = [];
+  function notifyPending() {
+    for ( var i = 0, len = pending.length; i < len; i++ ) {
+      pending[i][state](settledResult);
+    }
+    pending = null;
+  }
 
-    for ( var i = 0, len = workingSet.length; i < len; i++ ) {
-      var promise = workingSet[i];
-      try {
-        promise[methods[state]](settledResult);
+  function createThen(onFulfilled, onRejected) {
+    return createWelshPromise(thenResolver);
+
+    function thenResolver(resolve, reject) {
+      addPending(fulfilledHandler, rejectedHandler);
+
+      function fulfilledHandler(result) {
+        try {
+          if ( !isFunction(onFulfilled) ) {
+            resolve(result);
+            return;
+          }
+          resolve(onFulfilled(result));
+        }
+        catch ( err ) {
+          reject(err);
+        }
       }
-      catch ( err ) {
+
+      function rejectedHandler(reason) {
+        try {
+          if ( !isFunction(onRejected) ) {
+            reject(reason);
+            return;
+          }
+          resolve(onRejected(reason));
+        }
+        catch ( err ) {
+          reject(err);
+        }
       }
-    }
-    if ( thenables.length ) {
-      queueCall(notifyThenables);
     }
   }
 }
-
-function welsh(executor) {
-  var promise = createWelshPromise();
-  if ( isFunction(executor) ) {
-    try {
-      executor(promise.resolve, promise.reject);
-    }
-    catch ( err ) {
-      promise.reject(err);
-    }
-    return {
-      then: promise.then, catch: promise.catch, finally: promise.finally
-    };
-  }
-  return promise;
-}
-
-welsh.resolved = resolved;
-welsh.rejected = rejectedState;
 
 function resolved(result) {
-  var promise = createWelshPromise();
-  promise.resolve(result);
-  return promise;
+  return createWelshPromise(function (resolve) {
+    resolve(result);
+  });
 }
 
 function rejected(reason) {
-  var promise = createWelshPromise();
-  promise.reject(reason);
-  return promise;
+  return createWelshPromise(function (resolve, reject) {
+    reject(reason);
+  });
 }
 
-module.exports = welsh.promise = welsh;
+createWelshPromise.promise = createWelshPromise;
+createWelshPromise.resolved = resolved;
+createWelshPromise.rejected = rejectedState;
+
+module.exports = createWelshPromise;
 
 },{"./callQueue":3}]},{},[1]);
