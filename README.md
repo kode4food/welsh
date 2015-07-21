@@ -11,9 +11,9 @@ npm install welsh --save
 Then, write code:
 
 ```javascript
-var welsh = require('welsh');
+var deferred = require('welsh').deferred;
 
-welsh(function (resolve, reject) {
+deferred(function (resolve, reject) {
   resolve("Bill");
 }).then(function (result) {
   return 'Hello, ' + result + '!';

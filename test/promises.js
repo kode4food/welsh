@@ -3,9 +3,9 @@
 "use strict";
 
 var expect = require('chai').expect;
-var welsh = require('../index');
+var welsh = require('../promise');
 
-describe("Welsh", function () {
+describe("Welsh Promises", function () {
   it("should work", function (done) {
     welsh(function (resolve, reject) {
       expect(resolve).to.be.a('function');
@@ -38,18 +38,16 @@ describe("Welsh", function () {
   });
 
   it("should handle exceptions", function (done) {
-    var p = welsh().catch(function (err) {
+    var p = welsh();
+
+    p.catch(function (err) {
       expect(err).to.equal("an error!");
       return 'totally ' + err;
     }).then(function (result) {
-      expect(result).to.equal("totally an error!");
-      var p = welsh();
-      setTimeout(function () {
-        p.reject(result + ' later');
-      }, 100);
-      return p;
+      expect(result).to.equal('totally an error!');
+      throw 'it was ' + result;
     }).catch(function (err) {
-      expect(err).to.equal("totally an error! later");
+      expect(err).to.equal("it was totally an error!");
       done();
     });
 
@@ -65,38 +63,41 @@ describe("Welsh", function () {
     });
   });
 
-  it("should explode if you re-resolve", function (done) {
+  it("should not explode if you re-resolve", function (done) {
     var p = welsh();
     p.resolve('hello');
     expect(function () {
       p.resolve('uh-oh!');
-    }).to.throw(Error);
+    }).to.not.throw(Error);
     done();
   });
-  
+
   it("should be able to continue", function (done) {
-    var p = welsh().then(function (result) {
+    var p = welsh();
+
+    var q = p.then(function (result) {
       expect(result).to.equal('Bob');
       return "Hello, " + result + "!";
     });
-    
+
     p.resolve('Bob');
-    p.then(function (result) {
+    var r = q.then(function (result) {
       expect(result).to.equal('Hello, Bob!');
       return result + ' ***';
     });
-    
-    p.then(function (result) {
+
+    r.then(function (result) {
       expect(result).to.equal('Hello, Bob! ***');
       done();
     });
   });
-  
+
   it("should allow re-entrant 'then'", function (done) {
-    var p = welsh();
-    p.then(function (result) {
+    var r, p = welsh();
+
+    var q = p.then(function (result) {
       expect(result).to.equal('Bill');
-      p.then(function (result) {
+      r = q.then(function (result) {
         expect(result).to.equal("Hello, Bill! How are you?");
         return result + " I'm fine!";
       });
@@ -105,11 +106,13 @@ describe("Welsh", function () {
       expect(result).to.equal("Hello, Bill!");
       return result + " How are you?";
     });
-    
+
     p.resolve('Bill');
-    p.then(function (result) {
-      expect(result).to.equal("Hello, Bill! How are you? I'm fine!");
-      done();
-    });
+    setTimeout(function () {
+      r.then(function (result) {
+        expect(result).to.equal("Hello, Bill! How are you? I'm fine!");
+        done();
+      });
+    }, 100);
   });
 });

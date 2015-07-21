@@ -4,7 +4,8 @@
   "description": "Promises, but not really",
   "main": "index.js",
   "scripts": {
-    "test": "gulp test"
+    "test": "gulp test",
+    "compliance": "promises-aplus-tests test/compliance-adapter"
   },
   "repository": {
     "type": "git",
@@ -34,6 +35,7 @@
     "gulp-rename": "^1.2.2",
     "mocha": "^2.2.5",
     "plato": "^1.5.0",
+    "promises-aplus-tests": "^2.1.1",
     "vinyl-source-stream": "^1.1.0"
   },
   "dependencies": {}
