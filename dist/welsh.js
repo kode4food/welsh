@@ -3,7 +3,54 @@
 "use strict";
 window.welsh = require('./index');
 
-},{"./index":3}],2:[function(require,module,exports){
+},{"./index":2}],2:[function(require,module,exports){
+"use strict";
+
+exports.deferred = require('./lib/deferred');
+exports.promise = require('./lib/promise');
+
+},{"./lib/deferred":4,"./lib/promise":5}],3:[function(require,module,exports){
+/*
+ * Welsh (Promises, but not really)
+ * Licensed under the MIT License
+ * see LICENSE.md
+ *
+ * @author Thomas S. Bradford (kode4food.it)
+ */
+
+"use strict";
+
+/* istanbul ignore next */
+var nextTick = typeof setImmediate === 'function' ? setImmediate : setTimeout;
+
+function createCallQueue() {
+  var queuedCalls = [];
+  return queueCall;
+
+  function queueCall(callback, callArgs) {
+    queuedCalls.push(callback);
+    if ( queuedCalls.length > 1 ) {
+      // nextTick has already been called
+      return;
+    }
+    nextTick(performCalls);
+  }
+
+  function performCalls() {
+    var callbacks = queuedCalls;
+    queuedCalls = [];
+    for ( var i = 0; i < callbacks.length; i++ ) {
+      callbacks[i]();
+    }
+    if ( queuedCalls.length ) {
+      nextTick(performCalls);
+    }
+  }
+}
+
+exports.createCallQueue = createCallQueue;
+
+},{}],4:[function(require,module,exports){
 /*
  * Welsh (Promises, but not really)
  * Licensed under the MIT License
@@ -17,14 +64,11 @@ window.welsh = require('./index');
 var fulfilled = 1;
 var rejected = 2;
 
-/* istanbul ignore next */
-var nodeProcess = typeof process !== 'undefined' ? process : {};
-
-/* istanbul ignore next */
-var nextTick = nodeProcess.nextTick || setTimeout;
+var createCallQueue = require('./callQueue').createCallQueue;
 
 function createWelshDeferred(executor) {
   var state, head, tail, pendingResult, running;
+  var queueCall = createCallQueue();
 
   var welshInterface = {
     cancel: cancel,
@@ -137,7 +181,7 @@ function createWelshDeferred(executor) {
   }
 
   function fulfilledLinker(result) {
-    nextTick(function () {
+    queueCall(function () {
       state = fulfilled;
       queueResult(result);
     });
@@ -145,7 +189,7 @@ function createWelshDeferred(executor) {
   }
 
   function rejectedLinker(result) {
-    nextTick(function () {
+    queueCall(function () {
       state = rejected;
       queueResult(result);
     });
@@ -158,15 +202,9 @@ function createWelshDeferred(executor) {
   }
 }
 
-module.exports = createWelshDeferred.Deferred = createWelshDeferred;
+module.exports = createWelshDeferred.deferred = createWelshDeferred;
 
-},{}],3:[function(require,module,exports){
-"use strict";
-
-exports.deferred = require('./deferred');
-exports.promise = require('./promise');
-
-},{"./deferred":2,"./promise":4}],4:[function(require,module,exports){
+},{"./callQueue":3}],5:[function(require,module,exports){
 /*
  * Welsh (Promises, but not really)
  * Licensed under the MIT License
@@ -177,15 +215,11 @@ exports.promise = require('./promise');
 
 "use strict";
 
+var createCallQueue = require('./callQueue').createCallQueue;
+
 var fulfilledState = 1;
 var rejectedState = 2;
 var methods = [undefined, 'resolve', 'reject'];
-
-/* istanbul ignore next */
-var nodeProcess = typeof process !== 'undefined' ? process : {};
-
-/* istanbul ignore next */
-var nextTick = nodeProcess.nextTick || setTimeout;
 
 function isPromise(value) {
   return (isObject(value) || isFunction(value)) && isFunction(value.then);
@@ -217,8 +251,10 @@ function rejectIdentity(reason) {
 }
 
 function createWelshPromise(onFulfilled, onRejected, parentThens) {
-  var state, head, tail, settledResult, notifying;
-  parentThens = parentThens.concat(appendThen);
+  var state, settledResult, thenables = [];
+  var queueCall = createCallQueue();
+
+  parentThens = parentThens ? parentThens.concat(appendThen) : [appendThen];
 
   return {
     resolve: resolve,
@@ -237,10 +273,13 @@ function createWelshPromise(onFulfilled, onRejected, parentThens) {
         resolvePromise(result);
         return;
       }
-      fulfillWith(onFulfilled(result));
+      if ( isFunction(onFulfilled) ) {
+        result = onFulfilled(result);
+      }
+      fulfillWith(result);
     }
     catch ( err ) {
-      rejectWith(err);
+      reject(err);
     }
   }
 
@@ -249,7 +288,13 @@ function createWelshPromise(onFulfilled, onRejected, parentThens) {
       return;
     }
     try {
-      fulfillWith(onRejected(reason));
+      if ( isFunction(onRejected) ) {
+        reason = onRejected(reason);
+        fulfillWith(reason);
+      }
+      else {
+        rejectWith(reason);
+      }
     }
     catch ( err ) {
       rejectWith(err);
@@ -261,13 +306,16 @@ function createWelshPromise(onFulfilled, onRejected, parentThens) {
     try {
       var then = promise.then;
       if ( findInArray(parentThens, then) ) {
-        rejectWith(new TypeError("Um, yeah, you can't do that"));
+        reject(new TypeError("Um, yeah, you can't do that"));
         return;
       }
       promise.then(wrappedResolve, wrappedReject);
     }
     catch ( err ) {
-      rejectWith(err);
+      if ( done ) {
+        return;
+      }
+      reject(err);
     }
 
     function wrappedResolve(result) {
@@ -283,10 +331,6 @@ function createWelshPromise(onFulfilled, onRejected, parentThens) {
         return;
       }
       done = true;
-      if ( isPromise(reason) ) {
-        resolve(reason);
-        return;
-      }
       reject(reason);
     }
   }
@@ -294,13 +338,13 @@ function createWelshPromise(onFulfilled, onRejected, parentThens) {
   function fulfillWith(value) {
     state = fulfilledState;
     settledResult = value;
-    nextTick(notifyThenables);
+    queueCall(notifyThenables);
   }
 
   function rejectWith(reason) {
     state = rejectedState;
     settledResult = reason;
-    nextTick(notifyThenables);
+    queueCall(notifyThenables);
   }
 
   function appendCatch(onRejected) {
@@ -320,15 +364,10 @@ function createWelshPromise(onFulfilled, onRejected, parentThens) {
     }
     var promise = createWelshPromise(onFulfilled, onRejected, parentThens);
 
-    if ( !tail ) {
-      head = tail = promise;
-    }
-    else {
-      tail = tail.next = promise;
-    }
+    thenables.push(promise);
 
-    if ( state && !notifying ) {
-      nextTick(notifyThenables);
+    if ( state ) {
+      queueCall(notifyThenables);
     }
 
     return {
@@ -337,23 +376,25 @@ function createWelshPromise(onFulfilled, onRejected, parentThens) {
   }
 
   function notifyThenables() {
-    notifying = true;
-    while ( head ) {
-      var promise = head;
+    var workingSet = thenables;
+    thenables = [];
+
+    for ( var i = 0, len = workingSet.length; i < len; i++ ) {
+      var promise = workingSet[i];
       try {
         promise[methods[state]](settledResult);
       }
       catch ( err ) {
-
       }
-      head = head.next || (tail = null);
     }
-    notifying = false;
+    if ( thenables.length ) {
+      queueCall(notifyThenables);
+    }
   }
 }
 
 function welsh(executor) {
-  var promise = createWelshPromise(resolveIdentity, rejectIdentity, []);
+  var promise = createWelshPromise();
   if ( isFunction(executor) ) {
     try {
       executor(promise.resolve, promise.reject);
@@ -372,17 +413,17 @@ welsh.resolved = resolved;
 welsh.rejected = rejectedState;
 
 function resolved(result) {
-  var promise = createWelshPromise(resolveIdentity, rejectIdentity, []);
+  var promise = createWelshPromise();
   promise.resolve(result);
   return promise;
 }
 
 function rejected(reason) {
-  var promise = createWelshPromise(resolveIdentity, rejectIdentity, []);
+  var promise = createWelshPromise();
   promise.reject(reason);
   return promise;
 }
 
-module.exports = welsh.Promise = welsh;
+module.exports = welsh.promise = welsh;
 
-},{}]},{},[1]);
+},{"./callQueue":3}]},{},[1]);
