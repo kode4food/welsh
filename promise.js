@@ -100,6 +100,9 @@ function createWelshPromise(onFulfilled, onRejected, parentThens) {
       promise.then(wrappedResolve, wrappedReject);
     }
     catch ( err ) {
+      if ( done ) {
+        return;
+      }
       reject(err);
     }
 

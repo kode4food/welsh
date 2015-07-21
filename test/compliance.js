@@ -2,8 +2,6 @@
 
 "use strict";
 
-return;
-
 var compliance = require('promises-aplus-tests');
 var adapter = require('./compliance-adapter');
 
