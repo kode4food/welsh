@@ -1,6 +1,8 @@
 # Welsh (Promises, but not really)
 
-Welsh is a lightweight Promise-like library.  In reality it works more like [Twisted's Deferreds](https://twistedmatrix.com/documents/current/core/howto/defer.html), but whatever.  Seriously, don't treat this as a compliant Promises implementation, because it isn't.  I didn't even read the spec.
+Welsh is a lightweight Promises library that supports Deferreds a-la [Twisted](https://twistedmatrix.com/documents/current/core/howto/defer.html) and [A+ Promises](https://promisesaplus.com/).
+
+The main difference between a Deferred and a Promise is that calling a Deferred's `then` method will modify the internal dispatch chain of the Deferred, whereas `then` against a Promise will produce a completely independent Promise instance.  Use a Promise when you want isolation, use a Deferred when you don't care.
 
 Here's how you use it.  First, npm install it:
 
@@ -24,7 +26,23 @@ deferred(function (resolve, reject) {
 
 Of course, the Functions in your chain can also return Welsh Deferreds.  You can also call reject() and do the whole onFulfilled, onRejected thing when you add functions to the chain.  Just check the code in `test/*.js` to see what I mean.
 
-You can also install it with Bower using `bower install welsh`.  Though honestly, I haven't tested it and don't plan to.  I'd love pull requests though!
+If you want to create a Promise, you migth do:
+
+```javascript
+var promise = require('welsh').promise;
+
+promise(function (resolve, reject) {
+  resolve("Bill");
+}).then(function (result) {
+  return 'Hello, ' + result + '!';
+}).then(function (result) {
+  console.log(result);
+});
+```
+
+Yeah, the code is basically identical.  That's the point!
+
+You can also install the library with Bower using `bower install welsh`.  Though honestly, I haven't tested it and don't plan to.  I'd love pull requests though!
 
 ## License (MIT License)
 Copyright (c) 2015 Thomas S. Bradford

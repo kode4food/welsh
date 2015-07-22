@@ -54,6 +54,27 @@ describe("Welsh Deferreds", function () {
     p.reject("an error!");
   });
 
+  it("should handle returned Deferreds that reject", function (done) {
+    var p = createWelshDeferred();
+
+    p.catch(function (err) {
+      expect(err).to.equal("an error!");
+      throw 'totally ' + err;
+    }).catch(function (result) {
+      expect(result).to.equal('totally an error!');
+      var np = createWelshDeferred();
+      setTimeout(function () {
+        np.reject('it was ' + result);
+      }, 100);
+      return np;
+    }).catch(function (err) {
+      expect(err).to.equal("it was totally an error!");
+      done();
+    });
+
+    p.reject("an error!");
+  });
+
   it("should accept values before 'then'", function (done) {
     var p = createWelshDeferred();
     p.resolve('hello');
@@ -124,10 +145,12 @@ describe("Welsh Deferreds", function () {
     }).then(function (result) {
       expect(result).to.equal('hello, bill');
       p.cancel();
-    }).then(function () {
-      called = true;
-    });
+    }).then(markCalled);
 
+    /* istanbul ignore next */
+    function markCalled() {
+      called = true;
+    }
     p.resolve('bill');
     setTimeout(function () {
       expect(called).to.be.false;
