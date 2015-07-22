@@ -9,7 +9,7 @@ window.welsh = require('./index');
 exports.deferred = require('./lib/deferred');
 exports.promise = require('./lib/promise');
 
-},{"./lib/deferred":4,"./lib/promise":5}],3:[function(require,module,exports){
+},{"./lib/deferred":3,"./lib/promise":5}],3:[function(require,module,exports){
 /*
  * Welsh (Promises, but not really)
  * Licensed under the MIT License
@@ -20,48 +20,9 @@ exports.promise = require('./lib/promise');
 
 "use strict";
 
-/* istanbul ignore next */
-var nextTick = typeof setImmediate === 'function' ? setImmediate : setTimeout;
-
-function createCallQueue() {
-  var queuedCalls = [];
-  return queueCall;
-
-  function queueCall(callback) {
-    queuedCalls.push(callback);
-    if ( queuedCalls.length > 1 ) {
-      // nextTick has already been called
-      return;
-    }
-    nextTick(performCalls);
-  }
-
-  function performCalls() {
-    var callbacks = queuedCalls;
-    queuedCalls = [];
-    for ( var i = 0; i < callbacks.length; i++ ) {
-      callbacks[i]();
-    }
-    if ( queuedCalls.length ) {
-      nextTick(performCalls);
-    }
-  }
-}
-
-module.exports = createCallQueue;
-
-},{}],4:[function(require,module,exports){
-/*
- * Welsh (Promises, but not really)
- * Licensed under the MIT License
- * see LICENSE.md
- *
- * @author Thomas S. Bradford (kode4food.it)
- */
-
-"use strict";
-
-var createCallQueue = require('./callQueue');
+var helpers = require('./helpers');
+var createCallQueue = helpers.createCallQueue;
+var getThenFunction = helpers.getThenFunction;
 
 var fulfilled = 1;
 var rejected = 2;
@@ -150,12 +111,13 @@ function createWelshDeferred(executor) {
 
   function proceed(result) {
     running = true;
-    if ( isDeferred(result) ) {
-      result.then(fulfilledLinker, rejectedLinker);
-      return;
-    }
-
     do {
+      var then = getThenFunction(result);
+      if ( then ) {
+        then(fulfilledLinker, rejectedLinker);
+        return;
+      }
+
       var callback = head[state];
       head = head.next || (tail = null);
       if ( !callback ) {
@@ -169,10 +131,6 @@ function createWelshDeferred(executor) {
       catch ( reason ) {
         result = reason;
         state = rejected;
-      }
-      if ( isDeferred(result) ) {
-        result.then(fulfilledLinker, rejectedLinker);
-        return;
       }
     }
     while ( head );
@@ -195,16 +153,11 @@ function createWelshDeferred(executor) {
     });
     throw result;
   }
-
-  function isDeferred(value) {
-    return typeof value === 'object' && value !== null &&
-           typeof value.then === 'function';
-  }
 }
 
 module.exports = createWelshDeferred;
 
-},{"./callQueue":3}],5:[function(require,module,exports){
+},{"./helpers":4}],4:[function(require,module,exports){
 /*
  * Welsh (Promises, but not really)
  * Licensed under the MIT License
@@ -214,11 +167,6 @@ module.exports = createWelshDeferred;
  */
 
 "use strict";
-
-var createCallQueue = require('./callQueue');
-
-var fulfilledState = 1;
-var rejectedState = 2;
 
 function getThenFunction(value) {
   if ( !value ) {
@@ -234,6 +182,57 @@ function getThenFunction(value) {
   }
   return then.bind(value);
 }
+
+"use strict";
+
+/* istanbul ignore next */
+var nextTick = typeof setImmediate === 'function' ? setImmediate : setTimeout;
+
+function createCallQueue() {
+  var queuedCalls = [];
+  return queueCall;
+
+  function queueCall(callback) {
+    queuedCalls.push(callback);
+    if ( queuedCalls.length > 1 ) {
+      // nextTick has already been called
+      return;
+    }
+    nextTick(performCalls);
+  }
+
+  function performCalls() {
+    var callbacks = queuedCalls;
+    queuedCalls = [];
+    for ( var i = 0; i < callbacks.length; i++ ) {
+      callbacks[i]();
+    }
+    if ( queuedCalls.length ) {
+      nextTick(performCalls);
+    }
+  }
+}
+
+exports.getThenFunction = getThenFunction;
+exports.createCallQueue = createCallQueue;
+
+},{}],5:[function(require,module,exports){
+/*
+ * Welsh (Promises, but not really)
+ * Licensed under the MIT License
+ * see LICENSE.md
+ *
+ * @author Thomas S. Bradford (kode4food.it)
+ */
+
+"use strict";
+
+var helpers = require('./helpers');
+var createCallQueue = helpers.createCallQueue;
+var getThenFunction = helpers.getThenFunction;
+
+var fulfilledState = 1;
+var rejectedState = 2;
 
 function createWelshPromise(executor) {
   var state, settledResult, pending = [];
@@ -376,4 +375,4 @@ createWelshPromise.rejected = rejected;
 
 module.exports = createWelshPromise;
 
-},{"./callQueue":3}]},{},[1]);
+},{"./helpers":4}]},{},[1]);
