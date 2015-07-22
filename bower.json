@@ -24,8 +24,7 @@
     "bower.json",
     "gulpfile.js",
     "index.js",
-    "package.json",
-    "README.md"
+    "package.json"
   ],
   "dependencies": { },
   "devDependencies": { }
