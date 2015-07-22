@@ -168,6 +168,9 @@ module.exports = createWelshDeferred;
 
 "use strict";
 
+/* istanbul ignore next */
+var nextTick = typeof setImmediate === 'function' ? setImmediate : setTimeout;
+
 function getThenFunction(value) {
   if ( !value ) {
     return null;
@@ -182,11 +185,6 @@ function getThenFunction(value) {
   }
   return then.bind(value);
 }
-
-"use strict";
-
-/* istanbul ignore next */
-var nextTick = typeof setImmediate === 'function' ? setImmediate : setTimeout;
 
 function createCallQueue() {
   var queuedCalls = [];
