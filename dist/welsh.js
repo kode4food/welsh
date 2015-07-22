@@ -175,7 +175,28 @@ module.exports = createWelshDeferred;
 "use strict";
 
 /* istanbul ignore next */
-var nextTick = typeof setImmediate === 'function' ? setImmediate : setTimeout;
+var _process = typeof process !== 'undefined' ? process : {};
+/* istanbul ignore next */
+var _setImmediate = typeof setImmediate === 'function' ? setImmediate : null;
+/* istanbul ignore next */
+var nextTick = _process.nextTick || _setImmediate || setTimeout;
+
+var slice = Array.prototype.slice;
+
+var bindThis;
+/* istanbul ignore else */
+if ( Function.prototype.bind ) {
+  bindThis = function (func, thisVal) {
+    return func.bind(thisVal);
+  };
+}
+else {
+  bindThis = function(func, thisVal) {
+    return function() {
+      return func.apply(thisVal, arguments);
+    };
+  };
+}
 
 function getThenFunction(value) {
   if ( !value ) {
@@ -189,7 +210,7 @@ function getThenFunction(value) {
   if ( typeof then !== 'function' ) {
     return null;
   }
-  return then.bind(value);
+  return bindThis(then, value);
 }
 
 function createCallQueue() {
@@ -255,7 +276,7 @@ function createWelshPromise(executor) {
       reject: reject,
       then: createThen,
       catch: createCatch
-    }
+    };
   }
 
   return welshInterface;
