@@ -1,6 +1,6 @@
 # Welsh (Promises, but not really)
 
-Welsh is a lightweight Promises library that supports Deferreds a-la [Twisted](https://twistedmatrix.com/documents/current/core/howto/defer.html) and [A+ Promises](https://promisesaplus.com/).
+Welsh is a lightweight Promises library that supports Deferreds à la [Twisted](https://twistedmatrix.com/documents/current/core/howto/defer.html) and [A+ Promises](https://promisesaplus.com/).
 
 The main difference between a Deferred and a Promise is that calling a Deferred's `then` method will modify the internal dispatch chain of the Deferred, whereas `then` against a Promise will produce a completely independent Promise instance.  Use a Promise when you want isolation, use a Deferred when you don't care.
 
