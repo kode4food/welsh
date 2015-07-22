@@ -20,10 +20,7 @@
   "ignore": [
     "browserify.js",
     "test",
-    ".gitignore",
-    ".npmignore",
-    ".editorconfig",
-    ".jshintrc",
+    ".*",
     "bower.json",
     "gulpfile.js",
     "index.js",
