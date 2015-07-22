@@ -3,11 +3,11 @@
 "use strict";
 
 var expect = require('chai').expect;
-var welsh = require('../lib/promise');
+var createWelshPromise = require('../lib/promise');
 
 describe("Welsh Promises", function () {
   it("should work", function (done) {
-    welsh(function (resolve, reject) {
+    createWelshPromise(function (resolve, reject) {
       expect(resolve).to.be.a('function');
       expect(reject).to.be.a('function');
       resolve('bill');
@@ -19,9 +19,9 @@ describe("Welsh Promises", function () {
       return '"---' + result + '---"';
     }).then(/* fall through */).then(function (result) {
       expect(result).to.equal('"---hello bill---"');
-      var np = welsh();
+      var np = createWelshPromise();
       setTimeout(function () {
-        var another = welsh();
+        var another = createWelshPromise();
         np.resolve(another);
         setTimeout(function () {
           another.resolve('***' + result + '***');
@@ -38,7 +38,7 @@ describe("Welsh Promises", function () {
   });
 
   it("should handle exceptions", function (done) {
-    var p = welsh();
+    var p = createWelshPromise();
 
     p.catch(function (err) {
       expect(err).to.equal("an error!");
@@ -55,7 +55,7 @@ describe("Welsh Promises", function () {
   });
 
   it("should accept values before 'then'", function (done) {
-    var p = welsh();
+    var p = createWelshPromise();
     p.resolve('hello');
     p.then(function (result) {
       expect(result).to.equal('hello');
@@ -64,7 +64,7 @@ describe("Welsh Promises", function () {
   });
 
   it("should not explode if you re-resolve", function (done) {
-    var p = welsh();
+    var p = createWelshPromise();
     p.resolve('hello');
     expect(function () {
       p.resolve('uh-oh!');
@@ -73,7 +73,7 @@ describe("Welsh Promises", function () {
   });
 
   it("should be able to continue", function (done) {
-    var p = welsh();
+    var p = createWelshPromise();
 
     var q = p.then(function (result) {
       expect(result).to.equal('Bob');
@@ -93,7 +93,7 @@ describe("Welsh Promises", function () {
   });
 
   it("should allow re-entrant 'then'", function (done) {
-    var r, p = welsh();
+    var r, p = createWelshPromise();
 
     var q = p.then(function (result) {
       expect(result).to.equal('Bill');
@@ -114,5 +114,19 @@ describe("Welsh Promises", function () {
         done();
       });
     }, 100);
+  });
+
+  it("should allow immediately resolved promises", function (done) {
+    createWelshPromise.resolved("IT IS RESOLVED!").then(function (result) {
+      expect(result).to.equal("IT IS RESOLVED!");
+      done();
+    });
+  });
+
+  it("should allow immediately rejected promises", function (done) {
+    createWelshPromise.rejected("IT IS REJECTED!").catch(function (result) {
+      expect(result).to.equal("IT IS REJECTED!");
+      done();
+    });
   });
 });

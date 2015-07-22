@@ -3,11 +3,11 @@
 "use strict";
 
 var expect = require('chai').expect;
-var welsh = require('../lib/deferred');
+var createWelshDeferred = require('../lib/deferred');
 
 describe("Welsh Deferreds", function () {
   it("should work", function (done) {
-    welsh(function (resolve, reject) {
+    createWelshDeferred(function (resolve, reject) {
       expect(resolve).to.be.a('function');
       expect(reject).to.be.a('function');
       resolve('bill');
@@ -19,9 +19,9 @@ describe("Welsh Deferreds", function () {
       return '"---' + result + '---"';
     }).then(/* fall through */).then(function (result) {
       expect(result).to.equal('"---hello bill---"');
-      var np = welsh();
+      var np = createWelshDeferred();
       setTimeout(function () {
-        var another = welsh();
+        var another = createWelshDeferred();
         np.resolve(another);
         setTimeout(function () {
           another.resolve('***' + result + '***');
@@ -38,7 +38,7 @@ describe("Welsh Deferreds", function () {
   });
 
   it("should handle exceptions", function (done) {
-    var p = welsh();
+    var p = createWelshDeferred();
 
     p.catch(function (err) {
       expect(err).to.equal("an error!");
@@ -55,7 +55,7 @@ describe("Welsh Deferreds", function () {
   });
 
   it("should accept values before 'then'", function (done) {
-    var p = welsh();
+    var p = createWelshDeferred();
     p.resolve('hello');
     p.then(function (result) {
       expect(result).to.equal('hello');
@@ -64,7 +64,7 @@ describe("Welsh Deferreds", function () {
   });
 
   it("should explode if you re-resolve", function (done) {
-    var p = welsh();
+    var p = createWelshDeferred();
     p.resolve('hello');
     expect(function () {
       p.resolve('uh-oh!');
@@ -73,7 +73,7 @@ describe("Welsh Deferreds", function () {
   });
 
   it("should be able to continue", function (done) {
-    var p = welsh();
+    var p = createWelshDeferred();
 
     var q = p.then(function (result) {
       expect(result).to.equal('Bob');
@@ -93,7 +93,7 @@ describe("Welsh Deferreds", function () {
   });
 
   it("should allow re-entrant 'then'", function (done) {
-    var r, p = welsh();
+    var r, p = createWelshDeferred();
 
     var q = p.then(function (result) {
       expect(result).to.equal('Bill');
@@ -118,7 +118,7 @@ describe("Welsh Deferreds", function () {
 
   it("should allow cancel", function (done) {
     var called = false;
-    var p = welsh();
+    var p = createWelshDeferred();
     p.then(function (result) {
       return 'hello, ' + result;
     }).then(function (result) {
@@ -133,5 +133,14 @@ describe("Welsh Deferreds", function () {
       expect(called).to.be.false;
       done();
     }, 100);
+  });
+
+  it("should reject if the executor explodes", function (done) {
+    createWelshDeferred(function (resolve, reject) {
+      throw "EXPLODED!";
+    }).catch(function (reason) {
+      expect(reason).to.equal("EXPLODED!");
+      done();
+    });
   });
 });

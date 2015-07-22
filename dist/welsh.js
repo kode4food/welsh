@@ -202,7 +202,7 @@ function createWelshDeferred(executor) {
   }
 }
 
-module.exports = createWelshDeferred.deferred = createWelshDeferred;
+module.exports = createWelshDeferred;
 
 },{"./callQueue":3}],5:[function(require,module,exports){
 /*
@@ -376,7 +376,7 @@ function rejected(reason) {
 
 createWelshPromise.promise = createWelshPromise;
 createWelshPromise.resolved = resolved;
-createWelshPromise.rejected = rejectedState;
+createWelshPromise.rejected = rejected;
 
 module.exports = createWelshPromise;
 
