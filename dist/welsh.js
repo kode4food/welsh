@@ -27,7 +27,7 @@ function createCallQueue() {
   var queuedCalls = [];
   return queueCall;
 
-  function queueCall(callback, callArgs) {
+  function queueCall(callback) {
     queuedCalls.push(callback);
     if ( queuedCalls.length > 1 ) {
       // nextTick has already been called
@@ -48,7 +48,7 @@ function createCallQueue() {
   }
 }
 
-exports.createCallQueue = createCallQueue;
+module.exports = createCallQueue;
 
 },{}],4:[function(require,module,exports){
 /*
@@ -64,7 +64,7 @@ exports.createCallQueue = createCallQueue;
 var fulfilled = 1;
 var rejected = 2;
 
-var createCallQueue = require('./callQueue').createCallQueue;
+var createCallQueue = require('./callQueue');
 
 function createWelshDeferred(executor) {
   var state, head, tail, pendingResult, running;
@@ -215,7 +215,7 @@ module.exports = createWelshDeferred.deferred = createWelshDeferred;
 
 "use strict";
 
-var createCallQueue = require('./callQueue').createCallQueue;
+var createCallQueue = require('./callQueue');
 
 var fulfilledState = 1;
 var rejectedState = 2;
@@ -247,12 +247,7 @@ function createWelshPromise(executor) {
   };
 
   if ( isFunction(executor) ) {
-    try {
-      doResolve(executor, resolve, reject);
-    }
-    catch ( err ) {
-      reject(err);
-    }
+    doResolve(executor);
   }
   return welshInterface;
 
@@ -265,7 +260,7 @@ function createWelshPromise(executor) {
     try {
       var then = getThenFunction(result);
       if ( then ) {
-        doResolve(then, resolve, reject);
+        doResolve(then);
         return;
       }
       state = fulfilledState;
@@ -284,26 +279,26 @@ function createWelshPromise(executor) {
     queueCall(notifyPending);
   }
 
-  function doResolve(executor, onFulfilled, onRejected) {
+  function doResolve(executor) {
     var done;
     try {
       executor(wrappedResolve, wrappedReject);
     }
     catch ( err ) {
       if ( done ) { return; }
-      onRejected(err);
+      reject(err);
     }
 
     function wrappedResolve(result) {
       if ( done ) { return; }
       done = true;
-      onFulfilled(result);
+      resolve(result);
     }
 
     function wrappedReject(reason) {
       if ( done ) { return; }
       done = true;
-      onRejected(reason);
+      reject(reason);
     }
   }
 
@@ -335,11 +330,11 @@ function createWelshPromise(executor) {
       addPending(fulfilledHandler, rejectedHandler);
 
       function fulfilledHandler(result) {
+        if ( !isFunction(onFulfilled) ) {
+          resolve(result);
+          return;
+        }
         try {
-          if ( !isFunction(onFulfilled) ) {
-            resolve(result);
-            return;
-          }
           resolve(onFulfilled(result));
         }
         catch ( err ) {
@@ -348,11 +343,11 @@ function createWelshPromise(executor) {
       }
 
       function rejectedHandler(reason) {
+        if ( !isFunction(onRejected) ) {
+          reject(reason);
+          return;
+        }
         try {
-          if ( !isFunction(onRejected) ) {
-            reject(reason);
-            return;
-          }
           resolve(onRejected(reason));
         }
         catch ( err ) {
