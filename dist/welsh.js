@@ -28,17 +28,16 @@ var fulfilled = 1;
 var rejected = 2;
 
 function createWelshDeferred(executor) {
-  var state, head, tail, pendingResult, running;
+  var welshInterface, state, head, tail, pendingResult, running;
   var queueCall = createCallQueue();
-
-  var welshInterface = {
-    cancel: cancel,
-    then: appendThen,
-    catch: appendCatch
-  };
 
   if ( typeof executor === 'function' ) {
     try {
+      welshInterface = {
+        then: appendThen,
+        catch: appendCatch,
+        cancel: cancel
+      };
       executor(resolve, reject);
     }
     catch ( err ) {
@@ -46,8 +45,13 @@ function createWelshDeferred(executor) {
     }
   }
   else {
-    welshInterface.resolve = resolve;
-    welshInterface.reject = reject;
+    welshInterface = {
+      resolve: resolve,
+      reject: reject,
+      then: appendThen,
+      catch: appendCatch,
+      cancel: cancel
+    };
   }
 
   return welshInterface;
@@ -235,20 +239,23 @@ var fulfilledState = 1;
 var rejectedState = 2;
 
 function createWelshPromise(executor) {
-  var state, settledResult, pending = [];
+  var welshInterface, state, settledResult, pending = [];
   var queueCall = createCallQueue();
 
-  var welshInterface = {
-    then: createThen,
-    catch: createCatch
-  };
-
   if ( typeof executor === 'function' ) {
+    welshInterface = {
+      then: createThen,
+      catch: createCatch
+    };
     doResolve(executor);
   }
   else {
-    welshInterface.resolve = resolve;
-    welshInterface.reject = reject;
+    welshInterface = {
+      resolve: resolve,
+      reject: reject,
+      then: createThen,
+      catch: createCatch
+    }
   }
 
   return welshInterface;
