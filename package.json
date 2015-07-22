@@ -1,6 +1,6 @@
 {
   "name": "welsh",
-  "version": "1.4.1",
+  "version": "1.4.2",
   "description": "Promises, but not really",
   "main": "index.js",
   "scripts": {
@@ -18,7 +18,8 @@
     "callbacks",
     "promises",
     "futures",
-    "deferred"
+    "deferred",
+    "promises-aplus"
   ],
   "author": "Thomas S. Bradford <thom@kode4food.it>",
   "license": "MIT",

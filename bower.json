@@ -1,6 +1,6 @@
 {
   "name": "welsh",
-  "version": "1.4.1",
+  "version": "1.4.2",
   "description": "Promises, but not really",
   "authors": ["Thomas S. Bradford"],
   "main": "dist/welsh.min.js",
@@ -11,7 +11,8 @@
     "callbacks",
     "promises",
     "futures",
-    "deferred"
+    "deferred",
+    "promises-aplus"
   ],
   "repository": {
     "type": "git",
