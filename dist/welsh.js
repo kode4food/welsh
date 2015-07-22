@@ -61,10 +61,10 @@ module.exports = createCallQueue;
 
 "use strict";
 
+var createCallQueue = require('./callQueue');
+
 var fulfilled = 1;
 var rejected = 2;
-
-var createCallQueue = require('./callQueue');
 
 function createWelshDeferred(executor) {
   var state, head, tail, pendingResult, running;
@@ -220,10 +220,6 @@ var createCallQueue = require('./callQueue');
 var fulfilledState = 1;
 var rejectedState = 2;
 
-function isFunction(value) {
-  return typeof value === 'function';
-}
-
 function getThenFunction(value) {
   if ( !value ) {
     return null;
@@ -250,7 +246,7 @@ function createWelshPromise(executor) {
     catch: createCatch
   };
 
-  if ( isFunction(executor) ) {
+  if ( typeof executor === 'function' ) {
     doResolve(executor);
   }
   return welshInterface;
@@ -312,7 +308,7 @@ function createWelshPromise(executor) {
 
   function addPending(onFulfilled, onRejected) {
     if ( !state ) {
-      pending.push([undefined, onFulfilled, onRejected]);
+      pending.push({ 1: onFulfilled, 2: onRejected });
       return;
     }
     queueCall(function () {
@@ -334,7 +330,7 @@ function createWelshPromise(executor) {
       addPending(fulfilledHandler, rejectedHandler);
 
       function fulfilledHandler(result) {
-        if ( !isFunction(onFulfilled) ) {
+        if ( typeof onFulfilled !== 'function' ) {
           resolve(result);
           return;
         }
@@ -347,7 +343,7 @@ function createWelshPromise(executor) {
       }
 
       function rejectedHandler(reason) {
-        if ( !isFunction(onRejected) ) {
+        if ( typeof onRejected !== 'function' ) {
           reject(reason);
           return;
         }
