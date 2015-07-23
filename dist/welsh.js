@@ -9,7 +9,40 @@ window.welsh = require('./index');
 exports.deferred = require('./lib/deferred');
 exports.promise = require('./lib/promise');
 
-},{"./lib/deferred":3,"./lib/promise":5}],3:[function(require,module,exports){
+},{"./lib/deferred":4,"./lib/promise":6}],3:[function(require,module,exports){
+/*
+ * Welsh (Promises, but not really)
+ * Licensed under the MIT License
+ * see LICENSE.md
+ *
+ * @author Thomas S. Bradford (kode4food.it)
+ */
+
+"use strict";
+
+function createCommonExports(name, generatorFunc) {
+  function resolved(result) {
+    return generatorFunc(function (resolve) {
+      resolve(result);
+    });
+  }
+
+  function rejected(reason) {
+    return generatorFunc(function (resolve, reject) {
+      reject(reason);
+    });
+  }
+
+  generatorFunc[name] = generatorFunc;
+  generatorFunc.resolved = resolved;
+  generatorFunc.rejected = rejected;
+
+  return generatorFunc;
+}
+
+exports.createCommonExports = createCommonExports;
+
+},{}],4:[function(require,module,exports){
 /*
  * Welsh (Promises, but not really)
  * Licensed under the MIT License
@@ -23,9 +56,10 @@ exports.promise = require('./lib/promise');
 var helpers = require('./helpers');
 var createCallQueue = helpers.createCallQueue;
 var getThenFunction = helpers.getThenFunction;
+var createCommonExports = require('./api').createCommonExports;
 
-var fulfilled = 1;
-var rejected = 2;
+var fulfilledState = 1;
+var rejectedState = 2;
 
 function createWelshDeferred(executor) {
   var welshInterface, state, head, tail, pendingResult, running;
@@ -70,11 +104,11 @@ function createWelshDeferred(executor) {
   }
 
   function resolve(result) {
-    return start(fulfilled, result);
+    return start(fulfilledState, result);
   }
 
   function reject(reason) {
-    return start(rejected, reason);
+    return start(rejectedState, reason);
   }
 
   function queueResult(result) {
@@ -132,11 +166,11 @@ function createWelshDeferred(executor) {
 
       try {
         result = callback(result);
-        state = fulfilled;
+        state = fulfilledState;
       }
       catch ( reason ) {
         result = reason;
-        state = rejected;
+        state = rejectedState;
       }
     }
     while ( head );
@@ -146,7 +180,7 @@ function createWelshDeferred(executor) {
 
   function fulfilledLinker(result) {
     queueCall(function () {
-      state = fulfilled;
+      state = fulfilledState;
       queueResult(result);
     });
     return result;
@@ -154,16 +188,16 @@ function createWelshDeferred(executor) {
 
   function rejectedLinker(result) {
     queueCall(function () {
-      state = rejected;
+      state = rejectedState;
       queueResult(result);
     });
     throw result;
   }
 }
 
-module.exports = createWelshDeferred;
+module.exports = createCommonExports('deferred', createWelshDeferred);
 
-},{"./helpers":4}],4:[function(require,module,exports){
+},{"./api":3,"./helpers":5}],5:[function(require,module,exports){
 /*
  * Welsh (Promises, but not really)
  * Licensed under the MIT License
@@ -180,8 +214,6 @@ var _process = typeof process !== 'undefined' ? process : {};
 var _setImmediate = typeof setImmediate === 'function' ? setImmediate : null;
 /* istanbul ignore next */
 var nextTick = _process.nextTick || _setImmediate || setTimeout;
-
-var slice = Array.prototype.slice;
 
 var bindThis;
 /* istanbul ignore else */
@@ -241,7 +273,7 @@ function createCallQueue() {
 exports.getThenFunction = getThenFunction;
 exports.createCallQueue = createCallQueue;
 
-},{}],5:[function(require,module,exports){
+},{}],6:[function(require,module,exports){
 /*
  * Welsh (Promises, but not really)
  * Licensed under the MIT License
@@ -255,6 +287,7 @@ exports.createCallQueue = createCallQueue;
 var helpers = require('./helpers');
 var createCallQueue = helpers.createCallQueue;
 var getThenFunction = helpers.getThenFunction;
+var createCommonExports = require('./api').createCommonExports;
 
 var fulfilledState = 1;
 var rejectedState = 2;
@@ -394,22 +427,6 @@ function createWelshPromise(executor) {
   }
 }
 
-function resolved(result) {
-  return createWelshPromise(function (resolve) {
-    resolve(result);
-  });
-}
+module.exports = createCommonExports('promise', createWelshPromise);
 
-function rejected(reason) {
-  return createWelshPromise(function (resolve, reject) {
-    reject(reason);
-  });
-}
-
-createWelshPromise.promise = createWelshPromise;
-createWelshPromise.resolved = resolved;
-createWelshPromise.rejected = rejected;
-
-module.exports = createWelshPromise;
-
-},{"./helpers":4}]},{},[1]);
+},{"./api":3,"./helpers":5}]},{},[1]);
