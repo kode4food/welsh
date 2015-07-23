@@ -58,28 +58,28 @@ function decorateInterface(promise) {
   }
 }
 
-function createCommonExports(name, generatorFunc) {
+function decorateExportedFunction(name, deferredGenerator) {
   function resolved(result) {
-    return generatorFunc(function (resolve) {
+    return deferredGenerator(function (resolve) {
       resolve(result);
     });
   }
 
   function rejected(reason) {
-    return generatorFunc(function (resolve, reject) {
+    return deferredGenerator(function (resolve, reject) {
       reject(reason);
     });
   }
 
-  generatorFunc[name] = generatorFunc;
-  generatorFunc.resolved = resolved;
-  generatorFunc.rejected = rejected;
+  deferredGenerator[name] = deferredGenerator;
+  deferredGenerator.resolved = resolved;
+  deferredGenerator.rejected = rejected;
 
-  return generatorFunc;
+  return deferredGenerator;
 }
 
 exports.decorateInterface = decorateInterface;
-exports.createCommonExports = createCommonExports;
+exports.decorateExportedFunction = decorateExportedFunction;
 
 },{}],4:[function(require,module,exports){
 /*
@@ -92,9 +92,9 @@ exports.createCommonExports = createCommonExports;
 
 "use strict";
 
-var api = require('./api');
-var decorateInterface = api.decorateInterface;
-var createCommonExports = api.createCommonExports;
+var decorators = require('./decorators');
+var decorateInterface = decorators.decorateInterface;
+var decorateExportedFunction = decorators.decorateExportedFunction;
 
 var helpers = require('./helpers');
 var createCallQueue = helpers.createCallQueue;
@@ -231,9 +231,9 @@ function createWelshDeferred(executor) {
   }
 }
 
-module.exports = createCommonExports('deferred', createWelshDeferred);
+module.exports = decorateExportedFunction('deferred', createWelshDeferred);
 
-},{"./api":3,"./helpers":5}],5:[function(require,module,exports){
+},{"./decorators":3,"./helpers":5}],5:[function(require,module,exports){
 /*
  * Welsh (Promises, but not really)
  * Licensed under the MIT License
@@ -320,9 +320,9 @@ exports.createCallQueue = createCallQueue;
 
 "use strict";
 
-var api = require('./api');
-var decorateInterface = api.decorateInterface;
-var createCommonExports = api.createCommonExports;
+var decorators = require('./decorators');
+var decorateInterface = decorators.decorateInterface;
+var decorateExportedFunction = decorators.decorateExportedFunction;
 
 var helpers = require('./helpers');
 var createCallQueue = helpers.createCallQueue;
@@ -356,7 +356,7 @@ function createWelshPromise(executor) {
       return welshInterface;
     }
     if ( welshInterface === result ) {
-      reject(new TypeError("Um, yeah, you can't do that"));
+      reject(new TypeError("Um, yeah, a Promise can't resolve itself"));
       return welshInterface;
     }
     try {
@@ -460,6 +460,6 @@ function createWelshPromise(executor) {
   }
 }
 
-module.exports = createCommonExports('promise', createWelshPromise);
+module.exports = decorateExportedFunction('promise', createWelshPromise);
 
-},{"./api":3,"./helpers":5}]},{},[1]);
+},{"./decorators":3,"./helpers":5}]},{},[1]);
