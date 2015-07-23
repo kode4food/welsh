@@ -31,7 +31,7 @@ deferred(function (resolve, reject) {
 
 Of course, the Functions in your chain can also return Welsh Deferreds.  You can also call reject() and do the whole onFulfilled, onRejected thing when you add functions to the chain.  Just check the code in `test/*.js` to see what I mean.
 
-If you want to create a Promise, you migth do:
+If you want to create a Promise, you might do:
 
 ```javascript
 var promise = require('welsh').promise;
