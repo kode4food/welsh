@@ -59,6 +59,33 @@ describe("Welsh Promises", function () {
     p.resolve('hello');
     p.then(function (result) {
       expect(result).to.equal('hello');
+      return result + ' there';
+    }).done(function (result) {
+      expect(result).to.equal('hello there');
+      done();
+    });
+  });
+
+  it("should not allow 'done' to mutate", function (done) {
+    var p = createWelshPromise();
+    p.resolve('hello');
+    p.then(function (result) {
+      expect(result).to.equal('hello');
+      return result + ' there';
+    }).done(function (result) {
+      expect(result).to.equal('hello there');
+      return 'should not happen';
+    }).then(function (result) {
+      expect(result).to.equal('hello there');
+      throw 'boom!';
+    }).catch(function (reason) {
+      expect(reason).to.equal('boom!');
+      throw reason + ' go the dynamite';
+    }).done(undefined, function (result) {
+      expect(result).to.equal("boom! go the dynamite");
+      return 'should not happen';
+    }).catch(function (result) {
+      expect(result).to.equal("boom! go the dynamite");
       done();
     });
   });

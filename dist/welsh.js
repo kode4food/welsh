@@ -20,6 +20,44 @@ exports.promise = require('./lib/promise');
 
 "use strict";
 
+function decorateInterface(promise) {
+  promise.catch = createCatch;
+  promise.done = createDone;
+  return promise;
+
+  function createCatch(onRejected) {
+    return promise.then(undefined, onRejected);
+  }
+
+  function createDone(onFulfilled, onRejected) {
+    return promise.then(wrappedFulfilled, wrappedRejected);
+
+    function wrappedFulfilled(result) {
+      try {
+        /* istanbul ignore else */
+        if ( typeof onFulfilled === 'function' ) {
+          onFulfilled(result);
+        }
+      } catch ( err ) {
+        /* no-op */
+      }
+      return result;
+    }
+
+    function wrappedRejected(reason) {
+      try {
+        /* istanbul ignore else */
+        if ( typeof onRejected === 'function' ) {
+          onRejected(reason);
+        }
+      } catch ( err ) {
+        /* no-op */
+      }
+      throw reason;
+    }
+  }
+}
+
 function createCommonExports(name, generatorFunc) {
   function resolved(result) {
     return generatorFunc(function (resolve) {
@@ -40,6 +78,7 @@ function createCommonExports(name, generatorFunc) {
   return generatorFunc;
 }
 
+exports.decorateInterface = decorateInterface;
 exports.createCommonExports = createCommonExports;
 
 },{}],4:[function(require,module,exports){
@@ -53,7 +92,9 @@ exports.createCommonExports = createCommonExports;
 
 "use strict";
 
-var createCommonExports = require('./api').createCommonExports;
+var api = require('./api');
+var decorateInterface = api.decorateInterface;
+var createCommonExports = api.createCommonExports;
 
 var helpers = require('./helpers');
 var createCallQueue = helpers.createCallQueue;
@@ -70,7 +111,6 @@ function createWelshDeferred(executor) {
     try {
       welshInterface = {
         then: appendThen,
-        catch: appendCatch,
         cancel: cancel
       };
       executor(resolve, reject);
@@ -84,12 +124,11 @@ function createWelshDeferred(executor) {
       resolve: resolve,
       reject: reject,
       then: appendThen,
-      catch: appendCatch,
       cancel: cancel
     };
   }
 
-  return welshInterface;
+  return decorateInterface(welshInterface);
 
   function start(newState, result) {
     if ( state ) {
@@ -98,10 +137,6 @@ function createWelshDeferred(executor) {
     state = newState;
     queueResult(result);
     return welshInterface;
-  }
-
-  function appendCatch(onRejected) {
-    return appendThen(undefined, onRejected);
   }
 
   function resolve(result) {
@@ -285,7 +320,9 @@ exports.createCallQueue = createCallQueue;
 
 "use strict";
 
-var createCommonExports = require('./api').createCommonExports;
+var api = require('./api');
+var decorateInterface = api.decorateInterface;
+var createCommonExports = api.createCommonExports;
 
 var helpers = require('./helpers');
 var createCallQueue = helpers.createCallQueue;
@@ -300,8 +337,7 @@ function createWelshPromise(executor) {
 
   if ( typeof executor === 'function' ) {
     welshInterface = {
-      then: createThen,
-      catch: createCatch
+      then: createThen
     };
     doResolve(executor);
   }
@@ -309,12 +345,11 @@ function createWelshPromise(executor) {
     welshInterface = {
       resolve: resolve,
       reject: reject,
-      then: createThen,
-      catch: createCatch
+      then: createThen
     };
   }
 
-  return welshInterface;
+  return decorateInterface(welshInterface);
 
   function resolve(result) {
     if ( state ) {
@@ -371,10 +406,6 @@ function createWelshPromise(executor) {
       done = true;
       reject(reason);
     }
-  }
-
-  function createCatch(onRejected) {
-    return createThen(undefined, onRejected);
   }
 
   function addPending(onFulfilled, onRejected) {
