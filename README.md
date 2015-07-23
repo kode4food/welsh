@@ -7,7 +7,13 @@
 
 Welsh is a lightweight Promises library that supports [A+ Promises](https://promisesaplus.com/) and Deferreds à la [Twisted](https://twistedmatrix.com/documents/current/core/howto/defer.html).
 
-The main difference between a Deferred and a Promise is that calling a Deferred's `then` method will modify the internal dispatch chain of the original Deferred and return the same instance, whereas `then` against a Promise will produce a completely independent Promise instance.  Use a Promise when you want isolation, use a Deferred when you don't care.
+The main differences between Deferreds and Promises revolve around internal state and mutability. 
+
+ Calling a Deferred's `then()` method will add callbacks to the internal dispatch chain of the Deferred and return the same instance.  Also, the internal state of a Deferred will mutate as it transitions between steps of the chain. 
+
+ On the other hand, Promises are completely independent, and once fulfilled, immutable.  Each call to a Promise's `then()` method will produce a new Promise instance that depends on the parent's eventually fulfilled value. 
+
+ Use a Deferred if you want to build a fast, isolated and synchronous dispatch chain that still honors the `then()` contract.  Use a Promise when you need to create multiple branches of intermediate results or you need to pass the promise into code that you don't control.
 
 Here's how you use it.  First, npm install it:
 
