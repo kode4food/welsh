@@ -1,3 +1,8 @@
+<a href="http://promises-aplus.github.com/promises-spec">
+    <img src="http://promises-aplus.github.com/promises-spec/assets/logo-small.png"
+         align="right" alt="Promises/A+ logo" />
+</a>
+
 # Welsh (Promises, but not really)
 
 Welsh is a lightweight Promises library that supports [A+ Promises](https://promisesaplus.com/) and Deferreds à la [Twisted](https://twistedmatrix.com/documents/current/core/howto/defer.html).
