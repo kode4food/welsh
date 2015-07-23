@@ -20,12 +20,6 @@ exports.promise = require('./lib/promise');
 
 "use strict";
 
-function titleCase(str) {
-  return str.replace(/\w\S*/g, function (txt) {
-    return txt.charAt(0).toUpperCase() + txt.substring(1).toLowerCase();
-  });
-}
-
 function createCommonExports(name, generatorFunc) {
   function resolved(result) {
     return generatorFunc(function (resolve) {
@@ -39,7 +33,6 @@ function createCommonExports(name, generatorFunc) {
     });
   }
 
-  generatorFunc[titleCase(name)] = generatorFunc;
   generatorFunc[name] = generatorFunc;
   generatorFunc.resolved = resolved;
   generatorFunc.rejected = rejected;
@@ -60,10 +53,11 @@ exports.createCommonExports = createCommonExports;
 
 "use strict";
 
+var createCommonExports = require('./api').createCommonExports;
+
 var helpers = require('./helpers');
 var createCallQueue = helpers.createCallQueue;
 var getThenFunction = helpers.getThenFunction;
-var createCommonExports = require('./api').createCommonExports;
 
 var fulfilledState = 1;
 var rejectedState = 2;
@@ -291,10 +285,11 @@ exports.createCallQueue = createCallQueue;
 
 "use strict";
 
+var createCommonExports = require('./api').createCommonExports;
+
 var helpers = require('./helpers');
 var createCallQueue = helpers.createCallQueue;
 var getThenFunction = helpers.getThenFunction;
-var createCommonExports = require('./api').createCommonExports;
 
 var fulfilledState = 1;
 var rejectedState = 2;
