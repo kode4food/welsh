@@ -247,11 +247,9 @@ module.exports = decorateExportedFunction('deferred', createWelshDeferred);
 "use strict";
 
 /* istanbul ignore next */
-var _process = typeof process !== 'undefined' ? process : {};
-/* istanbul ignore next */
 var _setImmediate = typeof setImmediate === 'function' ? setImmediate : null;
 /* istanbul ignore next */
-var nextTick = _process.nextTick || _setImmediate || setTimeout;
+var nextTick = _setImmediate || setTimeout;
 
 var bindThis;
 /* istanbul ignore else */
