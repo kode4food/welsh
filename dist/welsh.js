@@ -20,61 +20,73 @@ exports.deferred = require('./lib/deferred').createWelshDeferred;
 "use strict";
 
 var welshPromise = require('./promise');
+var helpers = require('./helpers');
+var tryCatch = helpers.tryCatch;
 
 function decorateInterface(promise) {
   promise.catch = createCatch;
   promise.finally = createFinally;
+  promise.toNode = createToNode;
   return promise;
 
   function createCatch(onRejected) {
     return promise.then(undefined, onRejected);
   }
 
-  function createFinally(onFulfilled, onRejected) {
+  function createToNode(callback) {
+    return promise.then(wrappedFulfilled, wrappedRejected);
+
+    function wrappedFulfilled(result) {
+      try {
+        callback(null, result);
+      } finally {
+        return result;
+      }
+    }
+
+    function wrappedRejected(reason) {
+      try {
+        callback(reason);
+      }
+      finally {
+        throw reason;
+      }
+    }
+  }
+
+  function createFinally(onFinally) {
     return welshPromise.createWelshPromise(function (resolve, reject) {
       promise.then(wrappedFulfilled, wrappedRejected);
 
       function wrappedFulfilled(result) {
+        tryCatch(onFinally);
         resolve(result);
-        try {
-          /* istanbul ignore else */
-          if ( typeof onFulfilled === 'function' ) {
-            onFulfilled(result);
-          }
-        }
-        catch (err) { /* no-op */ }
       }
 
       function wrappedRejected(reason) {
+        tryCatch(onFinally);
         reject(reason);
-        try {
-          /* istanbul ignore else */
-          if ( typeof onRejected === 'function' ) {
-            onRejected(reason);
-          }
-        }
-        catch (err) { /* no-op */ }
       }
     });
   }
 }
 
 function decorateExportedFunction(name, deferredGenerator) {
-  function resolved(result) {
+  function createResolved(result) {
     return deferredGenerator(function (resolve) {
       resolve(result);
     });
   }
 
-  function rejected(reason) {
+  function createRejected(reason) {
     return deferredGenerator(function (resolve, reject) {
       reject(reason);
     });
   }
 
   deferredGenerator[name] = deferredGenerator;
-  deferredGenerator.resolved = resolved;
-  deferredGenerator.rejected = rejected;
+  deferredGenerator.resolve = createResolved;
+  deferredGenerator.reject = createRejected;
 
   return deferredGenerator;
 }
@@ -82,7 +94,7 @@ function decorateExportedFunction(name, deferredGenerator) {
 exports.decorateInterface = decorateInterface;
 exports.decorateExportedFunction = decorateExportedFunction;
 
-},{"./promise":6}],4:[function(require,module,exports){
+},{"./helpers":5,"./promise":6}],4:[function(require,module,exports){
 /*
  * Welsh (Promises, but not really)
  * Licensed under the MIT License
@@ -308,8 +320,23 @@ function createCallQueue() {
   }
 }
 
+function tryCatch(tryBlock, catchBlock) {
+  if ( typeof tryBlock !== 'function' ) {
+    return;
+  }
+  try {
+    return tryBlock();
+  }
+  catch ( err ) {
+    if ( typeof catchBlock === 'function' ) {
+      return catchBlock(err);
+    }
+  }
+}
+
 exports.getThenFunction = getThenFunction;
 exports.createCallQueue = createCallQueue;
+exports.tryCatch = tryCatch;
 
 },{}],6:[function(require,module,exports){
 /*

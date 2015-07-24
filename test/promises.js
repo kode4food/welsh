@@ -60,8 +60,7 @@ describe("Welsh Promises", function () {
     p.then(function (result) {
       expect(result).to.equal('hello');
       return result + ' there';
-    }).finally(function (result) {
-      expect(result).to.equal('hello there');
+    }).finally(function () {
       done();
     });
   });
@@ -72,8 +71,7 @@ describe("Welsh Promises", function () {
     p.then(function (result) {
       expect(result).to.equal('hello');
       return result + ' there';
-    }).finally(function (result) {
-      expect(result).to.equal('hello there');
+    }).finally(function () {
       return 'should not happen';
     }).then(function (result) {
       expect(result).to.equal('hello there');
@@ -81,10 +79,7 @@ describe("Welsh Promises", function () {
     }).catch(function (reason) {
       expect(reason).to.equal('boom!');
       throw reason + ' go the dynamite';
-    }).finally(undefined, function (result) {
-      expect(result).to.equal("boom! go the dynamite");
-      return 'should not happen';
-    }).catch(function (result) {
+    }).finally().catch(function (result) {
       expect(result).to.equal("boom! go the dynamite");
       done();
     });
@@ -144,14 +139,14 @@ describe("Welsh Promises", function () {
   });
 
   it("should allow immediately resolved promises", function (done) {
-    createWelshPromise.resolved("IT IS RESOLVED!").then(function (result) {
+    createWelshPromise.resolve("IT IS RESOLVED!").then(function (result) {
       expect(result).to.equal("IT IS RESOLVED!");
       done();
     });
   });
 
   it("should allow immediately rejected promises", function (done) {
-    createWelshPromise.rejected("IT IS REJECTED!").catch(function (result) {
+    createWelshPromise.reject("IT IS REJECTED!").catch(function (result) {
       expect(result).to.equal("IT IS REJECTED!");
       done();
     });
