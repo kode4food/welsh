@@ -102,6 +102,7 @@ var getThenFunction = helpers.getThenFunction;
 
 var fulfilledState = 1;
 var rejectedState = 2;
+var canceledState = 3;
 
 function createWelshDeferred(executor) {
   var welshInterface, state, head, tail, pendingResult, running;
@@ -182,6 +183,7 @@ function createWelshDeferred(executor) {
 
   function cancel() {
     head = null;
+    state = canceledState;
     return welshInterface;
   }
 
