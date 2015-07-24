@@ -3,7 +3,7 @@
 "use strict";
 
 var expect = require('chai').expect;
-var createWelshPromise = require('../lib/promise');
+var createWelshPromise = require('../lib/promise').createWelshPromise;
 
 describe("Welsh Promises", function () {
   it("should work", function (done) {
@@ -60,7 +60,7 @@ describe("Welsh Promises", function () {
     p.then(function (result) {
       expect(result).to.equal('hello');
       return result + ' there';
-    }).done(function (result) {
+    }).finally(function (result) {
       expect(result).to.equal('hello there');
       done();
     });
@@ -72,7 +72,7 @@ describe("Welsh Promises", function () {
     p.then(function (result) {
       expect(result).to.equal('hello');
       return result + ' there';
-    }).done(function (result) {
+    }).finally(function (result) {
       expect(result).to.equal('hello there');
       return 'should not happen';
     }).then(function (result) {
@@ -81,7 +81,7 @@ describe("Welsh Promises", function () {
     }).catch(function (reason) {
       expect(reason).to.equal('boom!');
       throw reason + ' go the dynamite';
-    }).done(undefined, function (result) {
+    }).finally(undefined, function (result) {
       expect(result).to.equal("boom! go the dynamite");
       return 'should not happen';
     }).catch(function (result) {

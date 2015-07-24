@@ -1,4 +1,3 @@
 "use strict";
-
-exports.deferred = require('./lib/deferred');
-exports.promise = require('./lib/promise');
+exports.promise = require('./lib/promise').createWelshPromise;
+exports.deferred = require('./lib/deferred').createWelshDeferred;

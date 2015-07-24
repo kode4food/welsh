@@ -1,10 +1,10 @@
 "use strict";
 
-var welsh = require('../lib/promise');
+var welshPromise = require('../lib/promise');
 
 module.exports = {
   deferred: function () {
-    var promise = welsh();
+    var promise = welshPromise.createWelshPromise();
     promise.promise = promise;
     return promise;
   }
