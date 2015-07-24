@@ -13,7 +13,7 @@ Calling a Deferred's `then()` method will add callbacks to the internal dispatch
 
 On the other hand, Promises are completely independent and, once fulfilled, immutable.  Each call to a Promise's `then()` method will produce a new Promise instance that depends on the parent's eventually fulfilled value.
 
-Use a Deferred if you want to build a fast, isolated, and synchronous dispatch chain that still honors 'Thenable' results.  Use a Promise when you need to create multiple branches of intermediate results or you need to pass the promise into code that you don't control.
+Use a Deferred if you want to build a fast, isolated, and synchronous dispatch chain that still honors 'Thenable' results.  Use a Promise when you need to create multiple branches of intermediate results or you need to pass the Promise into code that you don't control.
 
 Here's how you use it.  First, npm install it:
 
