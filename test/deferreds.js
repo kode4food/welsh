@@ -84,13 +84,27 @@ describe("Welsh Deferreds", function () {
     });
   });
 
-  it("should explode if you re-resolve", function (done) {
-    var p = createWelshDeferred();
+  it("should not re-enter if you re-resolve", function (done) {
+    var count = 0;
+    var p = createWelshDeferred().then(function (result) {
+      expect(++count).to.equal(1);
+      expect(result).to.equal('hello');
+
+      setTimeout(function () {
+        expect(function () {
+          p.resolve('uh-oh!');
+        }).to.not.throw();
+
+        p.then(function(result) {
+          expect(result).to.equal('hello there');
+          done();
+        });
+      }, 100);
+
+      return 'hello there';
+    });
+
     p.resolve('hello');
-    expect(function () {
-      p.resolve('uh-oh!');
-    }).to.throw(Error);
-    done();
   });
 
   it("should be able to continue", function (done) {

@@ -19,27 +19,27 @@ exports.deferred = require('./lib/deferred').createWelshDeferred;
 
 "use strict";
 
-var welshPromise = require('./promise');
 var helpers = require('./helpers');
 var tryCatch = helpers.tryCatch;
 
-function decorateInterface(promise) {
-  promise.catch = createCatch;
-  promise.finally = createFinally;
-  promise.toNode = createToNode;
-  return promise;
+function decorateInterface(deferred) {
+  deferred['catch'] = createCatch;
+  deferred['finally'] = createFinally;
+  deferred.toNode = createToNode;
+  return deferred;
 
   function createCatch(onRejected) {
-    return promise.then(undefined, onRejected);
+    return deferred.then(undefined, onRejected);
   }
 
   function createToNode(callback) {
-    return promise.then(wrappedFulfilled, wrappedRejected);
+    return deferred.then(wrappedFulfilled, wrappedRejected);
 
     function wrappedFulfilled(result) {
       try {
         callback(null, result);
-      } finally {
+      }
+      finally {
         return result;
       }
     }
@@ -55,19 +55,17 @@ function decorateInterface(promise) {
   }
 
   function createFinally(onFinally) {
-    return welshPromise.createWelshPromise(function (resolve, reject) {
-      promise.then(wrappedFulfilled, wrappedRejected);
+    return deferred.then(wrappedFulfilled, wrappedRejected);
 
-      function wrappedFulfilled(result) {
-        tryCatch(onFinally);
-        resolve(result);
-      }
+    function wrappedFulfilled(result) {
+      tryCatch(onFinally);
+      return result;
+    }
 
-      function wrappedRejected(reason) {
-        tryCatch(onFinally);
-        reject(reason);
-      }
-    });
+    function wrappedRejected(reason) {
+      tryCatch(onFinally);
+      throw reason;
+    }
   }
 }
 
@@ -84,9 +82,18 @@ function decorateExportedFunction(name, deferredGenerator) {
     });
   }
 
+  function createRace(values) {
+    return deferredGenerator(function (resolve, reject) {
+      for ( var i = 0, len = values.length; i < len; i++ ) {
+        values[i].then(resolve, reject);
+      }
+    });
+  }
+
   deferredGenerator[name] = deferredGenerator;
   deferredGenerator.resolve = createResolved;
   deferredGenerator.reject = createRejected;
+  deferredGenerator.race = createRace;
 
   return deferredGenerator;
 }
@@ -94,7 +101,7 @@ function decorateExportedFunction(name, deferredGenerator) {
 exports.decorateInterface = decorateInterface;
 exports.decorateExportedFunction = decorateExportedFunction;
 
-},{"./helpers":5,"./promise":6}],4:[function(require,module,exports){
+},{"./helpers":5}],4:[function(require,module,exports){
 /*
  * Welsh (Promises, but not really)
  * Licensed under the MIT License
@@ -146,7 +153,7 @@ function createWelshDeferred(executor) {
 
   function start(newState, result) {
     if ( state ) {
-      throw new Error("You can't welsh on this promise!");
+      return;
     }
     state = newState;
     queueResult(result);
