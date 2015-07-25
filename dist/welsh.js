@@ -21,6 +21,9 @@ exports.deferred = require('./lib/deferred').createWelshDeferred;
 
 var helpers = require('./helpers');
 var tryCatch = helpers.tryCatch;
+var getThenFunction = helpers.getThenFunction;
+
+var slice = Array.prototype.slice;
 
 function decorateInterface(deferred) {
   deferred['catch'] = createCatch;
@@ -90,10 +93,51 @@ function decorateExportedFunction(name, deferredGenerator) {
     });
   }
 
+  function createAll() {
+    var args;
+    if ( arguments.length === 1 && isArray(arguments[0]) ) {
+      args = slice.call(arguments[0]);
+    }
+    else {
+      args = slice.call(arguments);
+    }
+
+    return deferredGenerator(function (resolve, reject) {
+      var waitingFor = args.length;
+
+      if ( !waitingFor ) {
+        resolve([]);
+        return;
+      }
+
+      for ( var i = 0; i < waitingFor; i++ ) {
+        indexResolver(i, args[i]);
+      }
+
+      function indexResolver(index, value) {
+        try {
+          var then = getThenFunction(value);
+          if ( then ) {
+            then(function (result) { indexResolver(index, result) }, reject);
+            return;
+          }
+          args[index] = value;
+          if ( --waitingFor ) {
+            resolve(args);
+          }
+        }
+        catch ( err ) {
+          reject(err);
+        }
+      }
+    });
+  }
+
   deferredGenerator[name] = deferredGenerator;
   deferredGenerator.resolve = createResolved;
   deferredGenerator.reject = createRejected;
   deferredGenerator.race = createRace;
+  deferredGenerator.all = createAll;
 
   return deferredGenerator;
 }
@@ -267,6 +311,16 @@ exports.createWelshDeferred = createWelshDeferred;
 
 "use strict";
 
+var toString = Object.prototype.toString;
+
+var isArray = Array.isArray;
+/* istanbul ignore if: won't happen in node */
+if ( !isArray ) {
+  isArray = function _isArray(obj) {
+    return obj && toString.call(obj) === '[object Array]';
+  };
+}
+
 /* istanbul ignore next */
 var _setImmediate = typeof setImmediate === 'function' ? setImmediate : null;
 /* istanbul ignore next */
@@ -341,6 +395,7 @@ function tryCatch(tryBlock, catchBlock) {
   }
 }
 
+exports.isArray = isArray;
 exports.getThenFunction = getThenFunction;
 exports.createCallQueue = createCallQueue;
 exports.tryCatch = tryCatch;

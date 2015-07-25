@@ -101,7 +101,7 @@ describe("Welsh Deferreds", function () {
         });
       }, 100);
 
-      return 'hello there';
+      return result + ' there';
     });
 
     p.resolve('hello');
