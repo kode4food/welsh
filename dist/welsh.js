@@ -118,11 +118,13 @@ function decorateExportedFunction(name, deferredGenerator) {
         try {
           var then = getThenFunction(value);
           if ( then ) {
-            then(function (result) { indexResolver(index, result) }, reject);
+            then(function (result) {
+              indexResolver(index, result)
+            }, reject);
             return;
           }
           args[index] = value;
-          if ( --waitingFor ) {
+          if ( --waitingFor === 0 ) {
             resolve(args);
           }
         }
