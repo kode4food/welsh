@@ -109,13 +109,13 @@ function convertUsing(deferred, deferredGenerator) {
 }
 
 function decorateExportedFunction(name, deferredGenerator) {
-  function createResolved(result) {
+  function createResolve(result) {
     return deferredGenerator(function (resolve) {
       resolve(result);
     });
   }
 
-  function createRejected(reason) {
+  function createReject(reason) {
     return deferredGenerator(function (resolve, reject) {
       reject(reason);
     });
@@ -149,34 +149,27 @@ function decorateExportedFunction(name, deferredGenerator) {
     return deferredGenerator(function (resolve, reject) {
       var waitingFor = args.length;
 
+      for ( var i = 0, len = waitingFor; i < len; i++ ) {
+        var then = getThenFunction(args[i]);
+        if ( then ) {
+          resolveThenAtIndex(then, i);
+          continue;
+        }
+        waitingFor--;
+      }
+
       if ( !waitingFor ) {
-        resolve([]);
-        return;
+        resolve(args);
       }
 
-      for ( var i = 0, len = args.length; i < len; i++ ) {
-        indexResolver(i, args[i]);
-      }
+      function resolveThenAtIndex(then, index) {
+        then(wrappedResolve, wrappedReject);
 
-      function indexResolver(index, value) {
-        try {
-          var then = getThenFunction(value);
-          if ( then ) {
-            then(wrappedResolve, wrappedReject);
-            return;
-          }
-          args[index] = value;
+        function wrappedResolve(result) {
+          args[index] = result;
           if ( !--waitingFor ) {
             resolve(args);
           }
-        }
-        catch ( err ) {
-          /* istanbul ignore next */
-          reject(err);
-        }
-
-        function wrappedResolve(result) {
-          indexResolver(index, result);
           return result;
         }
 
@@ -189,8 +182,8 @@ function decorateExportedFunction(name, deferredGenerator) {
   }
 
   deferredGenerator[name] = deferredGenerator;
-  deferredGenerator.resolve = createResolved;
-  deferredGenerator.reject = createRejected;
+  deferredGenerator.resolve = createResolve;
+  deferredGenerator.reject = createReject;
   deferredGenerator.race = createRace;
   deferredGenerator.all = createAll;
 
