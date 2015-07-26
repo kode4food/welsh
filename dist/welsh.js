@@ -28,6 +28,8 @@ function decorateInterface(deferred) {
   deferred['catch'] = createCatch;
   deferred['finally'] = createFinally;
   deferred.toNode = createToNode;
+  deferred.toPromise = createToPromise;
+  deferred.toDeferred = createToDeferred;
   return deferred;
 
   function createCatch(onRejected) {
@@ -69,6 +71,31 @@ function decorateInterface(deferred) {
       }
     }
   }
+
+  function createToPromise() {
+    return convertUsing(deferred, require('./promise').createWelshPromise);
+  }
+
+  function createToDeferred() {
+    return convertUsing(deferred, require('./deferred').createWelshDeferred);
+  }
+}
+
+function convertUsing(deferred, deferredGenerator) {
+  return deferredGenerator(function (resolve, reject) {
+    var then = getThenFunction(deferred);
+    then(wrappedResolve, wrappedReject);
+
+    function wrappedResolve(result) {
+      resolve(result);
+      return result;
+    }
+
+    function wrappedReject(reason) {
+      reject(reason);
+      throw reason;
+    }
+  });
 }
 
 function decorateExportedFunction(name, deferredGenerator) {
@@ -163,7 +190,7 @@ function decorateExportedFunction(name, deferredGenerator) {
 exports.decorateInterface = decorateInterface;
 exports.decorateExportedFunction = decorateExportedFunction;
 
-},{"./helpers":5}],4:[function(require,module,exports){
+},{"./deferred":4,"./helpers":5,"./promise":6}],4:[function(require,module,exports){
 /*
  * Welsh (Promises, but not really)
  * Licensed under the MIT License

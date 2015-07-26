@@ -82,7 +82,7 @@ describe("Welsh 'all()' Implementation", function () {
     setTimeout(function () { d2.resolve('d2 resolved'); }, Math.random() * 99);
   });
 
-  it("should handle empty set for", function (done) {
+  it("should handle empty set", function (done) {
     var all = createWelshPromise.all([]);
     all.then(function (result) {
       expect(result).is.array;
