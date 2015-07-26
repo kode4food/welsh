@@ -22,8 +22,7 @@ exports.deferred = require('./lib/deferred').createWelshDeferred;
 var helpers = require('./helpers');
 var tryCatch = helpers.tryCatch;
 var getThenFunction = helpers.getThenFunction;
-
-var slice = Array.prototype.slice;
+var extractArrayArguments = helpers.extractArrayArguments;
 
 function decorateInterface(deferred) {
   deferred['catch'] = createCatch;
@@ -33,6 +32,20 @@ function decorateInterface(deferred) {
 
   function createCatch(onRejected) {
     return deferred.then(undefined, onRejected);
+  }
+
+  function createFinally(onFinally) {
+    return deferred.then(wrappedFulfilled, wrappedRejected);
+
+    function wrappedFulfilled(result) {
+      tryCatch(onFinally);
+      return result;
+    }
+
+    function wrappedRejected(reason) {
+      tryCatch(onFinally);
+      throw reason;
+    }
   }
 
   function createToNode(callback) {
@@ -56,20 +69,6 @@ function decorateInterface(deferred) {
       }
     }
   }
-
-  function createFinally(onFinally) {
-    return deferred.then(wrappedFulfilled, wrappedRejected);
-
-    function wrappedFulfilled(result) {
-      tryCatch(onFinally);
-      return result;
-    }
-
-    function wrappedRejected(reason) {
-      tryCatch(onFinally);
-      throw reason;
-    }
-  }
 }
 
 function decorateExportedFunction(name, deferredGenerator) {
@@ -85,22 +84,30 @@ function decorateExportedFunction(name, deferredGenerator) {
     });
   }
 
-  function createRace(values) {
+  function createRace() {
+    var args = extractArrayArguments.apply(null, arguments);
+
     return deferredGenerator(function (resolve, reject) {
-      for ( var i = 0, len = values.length; i < len; i++ ) {
-        values[i].then(resolve, reject);
+      try {
+        for ( var i = 0, len = args.length; i < len; i++ ) {
+          var value = args[i];
+          var then = getThenFunction(value);
+          if ( then ) {
+            then(resolve, reject);
+            continue;
+          }
+          resolve(value);
+        }
+      }
+      catch ( err ) {
+        /* istanbul ignore next */
+        reject(err);
       }
     });
   }
 
   function createAll() {
-    var args;
-    if ( arguments.length === 1 && isArray(arguments[0]) ) {
-      args = slice.call(arguments[0]);
-    }
-    else {
-      args = slice.call(arguments);
-    }
+    var args = extractArrayArguments.apply(null, arguments);
 
     return deferredGenerator(function (resolve, reject) {
       var waitingFor = args.length;
@@ -110,7 +117,7 @@ function decorateExportedFunction(name, deferredGenerator) {
         return;
       }
 
-      for ( var i = 0; i < waitingFor; i++ ) {
+      for ( var i = 0, len = args.length; i < len; i++ ) {
         indexResolver(i, args[i]);
       }
 
@@ -118,18 +125,27 @@ function decorateExportedFunction(name, deferredGenerator) {
         try {
           var then = getThenFunction(value);
           if ( then ) {
-            then(function (result) {
-              indexResolver(index, result)
-            }, reject);
+            then(wrappedResolve, wrappedReject);
             return;
           }
           args[index] = value;
-          if ( --waitingFor === 0 ) {
+          if ( !--waitingFor ) {
             resolve(args);
           }
         }
         catch ( err ) {
+          /* istanbul ignore next */
           reject(err);
+        }
+
+        function wrappedResolve(result) {
+          indexResolver(index, result);
+          return result;
+        }
+
+        function wrappedReject(reason) {
+          reject(reason);
+          throw reason;
         }
       }
     });
@@ -314,6 +330,7 @@ exports.createWelshDeferred = createWelshDeferred;
 "use strict";
 
 var toString = Object.prototype.toString;
+var slice = Array.prototype.slice;
 
 var isArray = Array.isArray;
 /* istanbul ignore if: won't happen in node */
@@ -397,10 +414,20 @@ function tryCatch(tryBlock, catchBlock) {
   }
 }
 
+function extractArrayArguments() {
+  if ( arguments.length === 1 && isArray(arguments[0]) ) {
+    return slice.call(arguments[0]);
+  }
+  else {
+    return slice.call(arguments);
+  }
+}
+
 exports.isArray = isArray;
 exports.getThenFunction = getThenFunction;
 exports.createCallQueue = createCallQueue;
 exports.tryCatch = tryCatch;
+exports.extractArrayArguments = extractArrayArguments;
 
 },{}],6:[function(require,module,exports){
 /*
