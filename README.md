@@ -3,37 +3,19 @@
 
 Welsh is a lightweight Promises library that supports [A+ Promises](https://promisesaplus.com/) and Deferreds à la [Twisted](https://twistedmatrix.com/documents/current/core/howto/defer.html).
 
-The main differences between Deferreds and Promises revolve around internal state and mutability.
-
-Calling a Deferred's `then()` method will add callbacks to the internal dispatch chain of the Deferred and return the same instance.  Also, the internal state of a Deferred will mutate as it transitions between steps of the chain.
-
-On the other hand, Promises are completely independent and, once fulfilled, immutable.  Each call to a Promise's `then()` method will produce a new Promise instance that depends on the parent's eventually fulfilled value.
-
-Use a Deferred if you want to build a fast, isolated, and synchronous dispatch chain that still honors 'Thenable' results.  Use a Promise when you need to create multiple branches of intermediate results or you need to pass the Promise into code that you don't control.
-
 Here's how you use it.  First, npm install it:
 
 ```bash
 npm install welsh --save
 ```
 
-Then, write code:
+or install it using Bower with:
 
-```javascript
-var deferred = require('welsh').deferred;
-
-deferred(function (resolve, reject) {
-  resolve("Bill");
-}).then(function (result) {
-  return 'Hello, ' + result + '!';
-}).then(function (result) {
-  console.log(result);
-});
+```bash
+bower install welsh --save
 ```
 
-Of course, the Functions in your chain can also return Welsh Deferreds.  You can also call reject() and do the whole onFulfilled, onRejected thing when you add functions to the chain.  Just check the code in `test/*.js` to see what I mean.
-
-If you want to create a Promise, you might do:
+Then, write code.  This will create a Promise:
 
 ```javascript
 var promise = require('welsh').promise;
@@ -47,9 +29,47 @@ promise(function (resolve, reject) {
 });
 ```
 
+while this will create a Deferred:
+
+```javascript
+var deferred = require('welsh').deferred;
+
+deferred(function (resolve, reject) {
+  resolve("Bill");
+}).then(function (result) {
+  return 'Hello, ' + result + '!';
+}).then(function (result) {
+  console.log(result);
+});
+```
+
 Yeah, the code is basically identical.  That's the point!
 
-You can also install the library with Bower using `bower install welsh`.  Though honestly, I haven't tested it and don't plan to.  I'd love pull requests though!
+## Promises versus Deferreds
+The main differences between Promises and Deferreds revolve around internal state and mutability.
+
+Promises are completely independent and, once fulfilled, immutable.  Each call to a Promise's `then()` method will produce a brand new Promise instance that depends on its parent's eventually fulfilled value.
+
+On the other hand, calling a Deferred's `then()` method will add callbacks to the internal dispatch chain of the Deferred and return the same instance.  Also, the internal state of a Deferred will mutate as it transitions between steps of the chain.
+
+## Here's Where It Gets Interesting
+Promises operate under the assumption that they'll be passed around to different parts of your code, that the chains will branch, and that the code they're calling will always result in an asynchronous result.
+
+But what are you doing most of the time with Promises?  You're usually creating a long, single-statement chain of `then()` calls that transform intermediate results, often synchronously.  As a result, you've now inherited a significant amount of unnecessary overhead.  So what is the solution?  Deferreds!
+
+Start off with a Deferred when you need close to bare-metal performance, and then generate a promise using `toPromise()` when you need to pass the result around. You can even use `toDeferred()` to convert a Promise back to a Deferred.
+
+```javascript
+return deferred(function (resolve, reject) {
+  resolve("Bill");
+}).then(function (result) {
+  return 'Hello, ' + result + '!';
+}).then(function (result) {
+  console.log(result);
+}).toPromise();
+```
+
+In short, use a Deferred if you want to build a fast, isolated, and synchronous dispatch chain that still honors asynchronous 'Thenable' results.  Use a Promise when you need to create multiple branches of intermediate results or you need to pass the Promise into code that you don't control.
 
 ## License (MIT License)
 Copyright (c) 2015 Thomas S. Bradford
