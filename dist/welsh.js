@@ -181,7 +181,6 @@ function decorateExportedFunction(name, deferredGenerator) {
     });
   }
 
-  deferredGenerator[name] = deferredGenerator;
   deferredGenerator.resolve = createResolve;
   deferredGenerator.reject = createReject;
   deferredGenerator.race = createRace;
