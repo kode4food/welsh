@@ -18,9 +18,9 @@ bower install welsh --save
 Then, write code.  This will create a Promise:
 
 ```javascript
-var promise = require('welsh').promise;
+var welsh = require('welsh');
 
-promise(function (resolve, reject) {
+welsh.promise(function (resolve, reject) {
   resolve("Bill");
 }).then(function (result) {
   return 'Hello, ' + result + '!';
@@ -32,9 +32,9 @@ promise(function (resolve, reject) {
 while this will create a Deferred:
 
 ```javascript
-var deferred = require('welsh').deferred;
+var welsh = require('welsh');
 
-deferred(function (resolve, reject) {
+welsh.deferred(function (resolve, reject) {
   resolve("Bill");
 }).then(function (result) {
   return 'Hello, ' + result + '!';
@@ -60,7 +60,7 @@ But what are you doing most of the time with Promises?  You're usually creating 
 Start off with a Deferred when you need close to bare-metal performance, and then generate a promise using `toPromise()` when you need to pass the result around. You can even use `toDeferred()` to convert a Promise back to a Deferred.
 
 ```javascript
-return deferred(function (resolve, reject) {
+return welsh.deferred(function (resolve, reject) {
   resolve("Bill");
 }).then(function (result) {
   return 'Hello, ' + result + '!';
