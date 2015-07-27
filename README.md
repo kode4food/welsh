@@ -100,7 +100,7 @@ The Promise or Deferred that is returned will be an Object that contains several
 
 `finally(onFinally?:Function)` - Will call the onFinally callback when the parent Promise or Deferred is either fulfilled or rejected.  Will not interrupt or modify further processing.
 
-`toNode(function (err?:any, result?:any))` - Returns a Promise or Deferred that performs a Node-style Callback.  Will not interrupt or modify further processing.
+`toNode(nodeCallback?:Function)` - Returns a Promise or Deferred that performs a Node-style Callback.  Will not interrupt or modify further processing.
 
 `toPromise()` - Converts the current Promise or Deferred into a new Promise (mostly useful for Deferreds).
 
@@ -111,7 +111,9 @@ The Promise or Deferred that is returned will be an Object that contains several
 For example:
 
 ```javascript
-var p = welsh.promise().catch(function (reason) {
+var p = welsh.promise();
+
+p.catch(function (reason) {
   console.log(reason);
 }).finally(function () {
   console.log("all done!");
