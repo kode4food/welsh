@@ -108,6 +108,18 @@ The Promise or Deferred that is returned will be an Object that contains several
 
 `cancel()` (for Deferreds only) - Cancels any further callback dispatching on the Deferred.
 
+For example:
+
+```javascript
+var p = welsh.promise().catch(function (reason) {
+  console.log(reason);
+}).finally(function () {
+  console.log("all done!");
+});
+
+p.reject('I reject you!');
+```
+
 The `welsh.promise` and `welsh.deferred` interfaces also expose some additional capabilities in the form of helper and utility functions:
 
 `resolve(result)` - Creates and returns an immediately resolved Promise or Deferred.
@@ -117,6 +129,20 @@ The `welsh.promise` and `welsh.deferred` interfaces also expose some additional 
 `all(...promises)` - Creates a new Promise or Deferred whose eventually fulfilled value will be an Array containing the fulfilled results of each provided Promise or Deferred.
 
 `race(...promises)` - Creates a new Promise or Deferred whose eventually fulfilled value will be the whichver provided Promise or Deferred is resolved first.
+
+For example:
+
+```javascript
+var p1 = welsh.promise();
+var p2 = welsh.promise();
+var d1 = welsh.deferred();
+
+welsh.promise.race(p1, p2, d1).then(function (result) {
+  console.log(result);
+});
+
+d1.resolve('D1 Wins!');
+```
 
 ## License (MIT License)
 Copyright (c) 2015 Thomas S. Bradford
