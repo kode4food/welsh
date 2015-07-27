@@ -71,6 +71,64 @@ return deferred(function (resolve, reject) {
 
 In short, use a Deferred if you want to build a fast, isolated, and synchronous dispatch chain that still honors asynchronous 'Thenable' results.  Use a Promise when you need to create multiple branches of intermediate results or you need to pass the Promise into code that you don't control.
 
+## The Welsh API
+Two (nearly) identical interfaces are exposed.  They are the `promise` and the `deferred` functions.  They are used to create a Promise or a Deferred, respectively.  Each function accepts an optional executor callback that is invoked synchronously and can be used to resolve or reject the promise or deferred that invoked it.
+
+```javascript
+var welsh = require('welsh');
+
+welsh.promise(function (resolve, reject) {
+  // call resolve(result) or reject(reason) somewhere.
+  // the one that is called first will win
+});
+
+welsh.deferred(function (resolve, reject) {
+  // call resolve(result) or reject(reason) somewhere.
+  // the one that is called first will win
+});
+
+The Promise or Deferred that is returned will be an Object that contains several Function properties.  Most of these should be familiar.  They are:
+
+`resolve(result?:any)` - Resolves the Promise or Deferred with the specified result.  This Function is only present if no executor was defined in the creation of the Promise/Deferred.
+`reject(reason?:any)` - Rejects the Promise or Deferred with the specified reason.  This Function is only present if no executor was defined in the creation of the Promise/Deferred.
+`then(onFulfilled?:Function, onRejected?:Function)` - In the case of a Promise, creates a Promise whose value depends on its parent. In the case of a Deferred, adds an onFulfilled and/or onRejected handler to the dispatch chain.
+`catch(onRejected?:Function)` - Same as 'then' except that only an `onRejected` callback is provided.
+`finally(onFinally?:Function)` - Will call the onFinally callback when the parent Promise or Deferred is either fulfilled or rejected.  Will not interrupt or modify further processing.
+`toNode(function (err?:any, result?:any))` - Returns a Promise or Deferred that performs a Node-style Callback.  Will not interrupt or modify further processing.
+`toPromise()` - Converts the current Promise or Deferred into a new Promise (mostly useful for Deferreds).
+`toDeferred()` - Converts the current Promise or Deferred into a new Deferred.
+`cancel()` (for Deferreds only) - Cancels any further callback dispatching on the Deferred.
+
+For example:
+
+```javascript
+var p = welsh.promise().catch(function (reason) {
+  console.log(reason);
+});
+p.reject('I reject you!');
+```
+
+The `welsh.promise` and `welsh.deferred` interfaces also expose some additional capabilities in the form of helper and utility functions:
+
+`resolve(result)` - Creates and returns an immediately resolved Promise or Deferred.
+`reject(reason)` - Creates and returns an immediately rejected Promise or Deferred.
+`race(...promises)` - Creates a new Promise or Deferred whose eventually fulfilled value will be the whichver provided Promise or Deferred is resolved first.
+`all(...promises)` - Creates a new Promise or Deferred whose eventually fulfilled value will be an Array containing the fulfilled results of each provided Promise or Deferred.
+
+For example:
+
+```javascript
+var p1 = welsh.promise();
+var p2 = welsh.promise();
+var d1 = welsh.deferred();
+
+welsh.promise.race(p1, p2, d1).then(function (result) {
+  console.log(result);
+});
+
+d1.resolve('D1 Wins!');
+```
+
 ## License (MIT License)
 Copyright (c) 2015 Thomas S. Bradford
 
