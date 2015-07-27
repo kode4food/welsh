@@ -86,6 +86,7 @@ welsh.deferred(function (resolve, reject) {
   // call resolve(result) or reject(reason) somewhere.
   // the one that is called first will win
 });
+```
 
 The Promise or Deferred that is returned will be an Object that contains several Function properties.  Most of these should be familiar.  They are:
 
