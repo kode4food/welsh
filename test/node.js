@@ -39,7 +39,6 @@ describe("Welsh 'toNode()' Implementation", function () {
       }
     }
   });
-
 });
 
 describe("Welsh 'fromNode()' Implementation", function () {
@@ -48,7 +47,6 @@ describe("Welsh 'fromNode()' Implementation", function () {
     var readFilePromise = welsh.promise.fromNode(fs.readFile);
     readFilePromise(filename).then(function (result) {
       var str = result.toString();
-
       expect(/"use strict";/.test(str)).to.be.true;
       done();
     }, done);

@@ -90,5 +90,4 @@ describe("Welsh 'all()' Implementation", function () {
       done();
     });
   });
-
 });
