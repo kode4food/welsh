@@ -24,6 +24,8 @@ var tryCatch = helpers.tryCatch;
 var getThenFunction = helpers.getThenFunction;
 var extractArrayArguments = helpers.extractArrayArguments;
 
+var slice = Array.prototype.slice;
+
 var createWelshPromise, createWelshDeferred;
 
 function decorateInterface(deferred) {
@@ -181,10 +183,30 @@ function decorateExportedFunction(name, deferredGenerator) {
     });
   }
 
+  function createFromNode(nodeFunction) {
+    return nodeWrapper;
+
+    function nodeWrapper() {
+      var wrapperArguments = arguments;
+      return deferredGenerator(function (resolve, reject) {
+        nodeFunction.apply(null, slice.call(wrapperArguments).concat(callback));
+
+        function callback(err) {
+          if ( err ) {
+            reject(err);
+            return;
+          }
+          resolve(slice.call(arguments, 1));
+        }
+      });
+    }
+  }
+
   deferredGenerator.resolve = createResolve;
   deferredGenerator.reject = createReject;
   deferredGenerator.race = createRace;
   deferredGenerator.all = createAll;
+  deferredGenerator.fromNode = createFromNode;
 
   return deferredGenerator;
 }
@@ -370,24 +392,35 @@ if ( !isArray ) {
 }
 
 /* istanbul ignore next */
-var _setImmediate = typeof setImmediate === 'function' ? setImmediate : null;
-/* istanbul ignore next */
-var nextTick = _setImmediate || setTimeout;
+var nextTick = (function () {
+  if ( typeof setImmediate === 'function' ) {
+    return setImmediate;
+  }
+  if ( typeof window === 'object' ) {
+    if ( typeof window.requestAnimationFrame === 'function' ) {
+      return window.requestAnimationFrame;
+    }
+  }
+  if ( typeof setTimeout === 'function' ) {
+    return setTimeout;
+  }
+  throw new Error("And I should schedule Promises how?");
+}());
 
-var bindThis;
-/* istanbul ignore else */
-if ( Function.prototype.bind ) {
-  bindThis = function (func, thisVal) {
-    return func.bind(thisVal);
-  };
-}
-else {
-  bindThis = function(func, thisVal) {
+/* istanbul ignore next */
+var bindThis = (function () {
+  if ( Function.prototype.bind ) {
+    return function (func, thisVal) {
+      return func.bind(thisVal);
+    };
+  }
+
+  return function (func, thisVal) {
     return function() {
       return func.apply(thisVal, arguments);
     };
   };
-}
+}());
 
 function getThenFunction(value) {
   if ( !value ) {
