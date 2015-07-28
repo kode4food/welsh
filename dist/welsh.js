@@ -203,20 +203,25 @@ function decorateExportedFunction(name, deferredGenerator) {
   }
 
   function createLazy(executor) {
-    var resolve, reject;
+    var resolve, reject, called;
+
+    if ( typeof executor !== 'function' ) {
+      return deferredGenerator();
+    }
 
     var deferred = deferredGenerator(function (_resolve, _reject) {
       resolve = _resolve;
       reject = _reject;
     });
 
-    var then = deferred.then;
+    var originalThen = deferred.then;
     deferred.then = function (onFulfilled, onRejected) {
-      if ( typeof executor === 'function' ) {
+      if ( !called ) {
+        deferred.then = originalThen;
+        called = true;
         executor(resolve, reject);
-        executor = null;
       }
-      return then(onFulfilled, onRejected);
+      return originalThen(onFulfilled, onRejected);
     };
 
     return deferred;

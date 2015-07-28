@@ -130,7 +130,11 @@ The `welsh.promise` and `welsh.deferred` interfaces also expose some additional 
 
 `all(...promises)` - Creates a new Promise or Deferred whose eventually fulfilled value will be an Array containing the fulfilled results of each provided Promise or Deferred.
 
-`race(...promises)` - Creates a new Promise or Deferred whose eventually fulfilled value will be the whichver provided Promise or Deferred is resolved first.
+`race(...promises)` - Creates a new Promise or Deferred whose eventually fulfilled value will be whichever provided Promise or Deferred is resolved first.
+
+`lazy(executor:Function)` - Constructs a 'lazy' Promise or Deferred where the Executor callback is not invoked until the first `then()`, `catch()`, or `finally()` is provided.
+
+`fromNode(nodeFunc:Function)` - Converts a Node-style Function that accepts a callback to one that instead returns a Promise or Deferred.
 
 For example:
 
