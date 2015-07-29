@@ -110,7 +110,7 @@ function convertUsing(deferred, deferredGenerator) {
   });
 }
 
-function decorateExportedFunction(name, deferredGenerator) {
+function decorateExportedFunction(deferredGenerator) {
   function createResolve(result) {
     return deferredGenerator(function (resolve) {
       resolve(result);
@@ -386,7 +386,7 @@ function createWelshDeferred(executor) {
   }
 }
 
-decorateExportedFunction('deferred', createWelshDeferred);
+decorateExportedFunction(createWelshDeferred);
 exports.createWelshDeferred = createWelshDeferred;
 
 },{"./decorators":3,"./helpers":5}],5:[function(require,module,exports){
@@ -662,7 +662,7 @@ function createWelshPromise(executor) {
   }
 }
 
-decorateExportedFunction('promise', createWelshPromise);
+decorateExportedFunction(createWelshPromise);
 exports.createWelshPromise = createWelshPromise;
 
 },{"./decorators":3,"./helpers":5}]},{},[1]);
