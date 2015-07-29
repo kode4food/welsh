@@ -3,8 +3,8 @@
 "use strict";
 
 var expect = require('chai').expect;
-var createWelshDeferred = require('../lib/deferred').createWelshDeferred;
-var createWelshPromise = require('../lib/promise').createWelshPromise;
+var createWelshDeferred = require('../lib/deferred');
+var createWelshPromise = require('../lib/promise');
 
 describe("Welsh 'all()' Implementation", function () {
   it("should support args with promises and deferreds", function (done) {

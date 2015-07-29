@@ -3,7 +3,7 @@
 "use strict";
 
 var expect = require('chai').expect;
-var createWelshDeferred = require('../lib/deferred').createWelshDeferred;
+var createWelshDeferred = require('../lib/deferred');
 
 describe("Welsh Deferreds", function () {
   it("should work", function (done) {

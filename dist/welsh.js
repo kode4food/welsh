@@ -5,10 +5,10 @@ window.welsh = require('./index');
 
 },{"./index":2}],2:[function(require,module,exports){
 "use strict";
-exports.promise = require('./lib/promise').createWelshPromise;
-exports.deferred = require('./lib/deferred').createWelshDeferred;
+module.exports = require('./lib');
 
-},{"./lib/deferred":4,"./lib/promise":6}],3:[function(require,module,exports){
+
+},{"./lib":6}],3:[function(require,module,exports){
 /*
  * Welsh (Promises, but not really)
  * Licensed under the MIT License
@@ -79,7 +79,7 @@ function decorateInterface(deferred) {
   function createToPromise() {
     /* istanbul ignore else */
     if ( !createWelshPromise ) {
-      createWelshPromise = require('./promise').createWelshPromise;
+      createWelshPromise = require('./promise');
     }
     return convertUsing(deferred, createWelshPromise);
   }
@@ -87,7 +87,7 @@ function decorateInterface(deferred) {
   function createToDeferred() {
     /* istanbul ignore else */
     if ( !createWelshDeferred ) {
-      createWelshDeferred = require('./deferred').createWelshDeferred;
+      createWelshDeferred = require('./deferred');
     }
     return convertUsing(deferred, createWelshDeferred);
   }
@@ -240,7 +240,7 @@ function decorateExportedFunction(deferredGenerator) {
 exports.decorateInterface = decorateInterface;
 exports.decorateExportedFunction = decorateExportedFunction;
 
-},{"./deferred":4,"./helpers":5,"./promise":6}],4:[function(require,module,exports){
+},{"./deferred":4,"./helpers":5,"./promise":7}],4:[function(require,module,exports){
 /*
  * Welsh (Promises, but not really)
  * Licensed under the MIT License
@@ -386,8 +386,7 @@ function createWelshDeferred(executor) {
   }
 }
 
-decorateExportedFunction(createWelshDeferred);
-exports.createWelshDeferred = createWelshDeferred;
+module.exports = decorateExportedFunction(createWelshDeferred);
 
 },{"./decorators":3,"./helpers":5}],5:[function(require,module,exports){
 /*
@@ -512,6 +511,11 @@ exports.tryCatch = tryCatch;
 exports.extractArrayArguments = extractArrayArguments;
 
 },{}],6:[function(require,module,exports){
+"use strict";
+exports.promise = require('./promise');
+exports.deferred = require('./deferred');
+
+},{"./deferred":4,"./promise":7}],7:[function(require,module,exports){
 /*
  * Welsh (Promises, but not really)
  * Licensed under the MIT License
@@ -610,23 +614,6 @@ function createWelshPromise(executor) {
     }
   }
 
-  function addPending(onFulfilled, onRejected) {
-    if ( !state ) {
-      pending.push({ 1: onFulfilled, 2: onRejected });
-      return;
-    }
-    queueCall(function () {
-      (state === fulfilledState ? onFulfilled : onRejected)(settledResult);
-    });
-  }
-
-  function notifyPending() {
-    for ( var i = 0, len = pending.length; i < len; i++ ) {
-      pending[i][state](settledResult);
-    }
-    pending = null;
-  }
-
   function createThen(onFulfilled, onRejected) {
     return createWelshPromise(thenResolver);
 
@@ -660,9 +647,25 @@ function createWelshPromise(executor) {
       }
     }
   }
+
+  function addPending(onFulfilled, onRejected) {
+    if ( !state ) {
+      pending.push({ 1: onFulfilled, 2: onRejected });
+      return;
+    }
+    queueCall(function () {
+      (state === fulfilledState ? onFulfilled : onRejected)(settledResult);
+    });
+  }
+
+  function notifyPending() {
+    for ( var i = 0, len = pending.length; i < len; i++ ) {
+      pending[i][state](settledResult);
+    }
+    pending = null;
+  }
 }
 
-decorateExportedFunction(createWelshPromise);
-exports.createWelshPromise = createWelshPromise;
+module.exports = decorateExportedFunction(createWelshPromise);
 
 },{"./decorators":3,"./helpers":5}]},{},[1]);

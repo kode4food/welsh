@@ -3,7 +3,7 @@
 "use strict";
 
 var expect = require('chai').expect;
-var createWelshPromise = require('../lib/promise').createWelshPromise;
+var createWelshPromise = require('../lib/promise');
 
 describe("Welsh Promises", function () {
   it("should work", function (done) {

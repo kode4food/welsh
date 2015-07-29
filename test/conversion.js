@@ -3,8 +3,8 @@
 "use strict";
 
 var expect = require('chai').expect;
-var createWelshDeferred = require('../lib/deferred').createWelshDeferred;
-var createWelshPromise = require('../lib/promise').createWelshPromise;
+var createWelshDeferred = require('../lib/deferred');
+var createWelshPromise = require('../lib/promise');
 
 describe("Welsh Conversions", function () {
   it("should allow a Promise to produce a Deferred", function (done) {
