@@ -399,26 +399,27 @@ module.exports = decorateExportedFunction(createWelshDeferred);
 
 "use strict";
 
-var toString = Object.prototype.toString;
 var slice = Array.prototype.slice;
 
-var isArray = Array.isArray;
-/* istanbul ignore if: won't happen in node */
-if ( !isArray ) {
-  isArray = function _isArray(obj) {
+/* istanbul ignore next */
+var isArray = (function () {
+  if ( Array.isArray ) {
+    return Array.isArray;
+  }
+  var toString = Object.prototype.toString;
+  return function _isArray(obj) {
     return obj && toString.call(obj) === '[object Array]';
   };
-}
+}());
 
 /* istanbul ignore next */
 var nextTick = (function () {
   if ( typeof setImmediate === 'function' ) {
     return setImmediate;
   }
-  if ( typeof window === 'object' ) {
-    if ( typeof window.requestAnimationFrame === 'function' ) {
-      return window.requestAnimationFrame;
-    }
+  if ( typeof window === 'object' &&
+       typeof window.requestAnimationFrame === 'function' ) {
+    return window.requestAnimationFrame;
   }
   if ( typeof setTimeout === 'function' ) {
     return setTimeout;
