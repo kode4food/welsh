@@ -256,7 +256,6 @@ var decorateInterface = decorators.decorateInterface;
 var decorateExportedFunction = decorators.decorateExportedFunction;
 
 var helpers = require('./helpers');
-var createCallQueue = helpers.createCallQueue;
 var getThenFunction = helpers.getThenFunction;
 
 var fulfilledState = 1;
@@ -265,7 +264,6 @@ var canceledState = 3;
 
 function createWelshDeferred(executor) {
   var welshInterface, state, head, tail, pendingResult, running;
-  var queueCall = createCallQueue();
 
   if ( typeof executor === 'function' ) {
     try {
@@ -376,19 +374,15 @@ function createWelshDeferred(executor) {
   }
 
   function fulfilledLinker(result) {
-    queueCall(function () {
-      state = fulfilledState;
-      queueResult(result);
-    });
+    state = fulfilledState;
+    queueResult(result);
     return result;
   }
 
-  function rejectedLinker(result) {
-    queueCall(function () {
-      state = rejectedState;
-      queueResult(result);
-    });
-    throw result;
+  function rejectedLinker(reason) {
+    state = rejectedState;
+    queueResult(reason);
+    throw reason;
   }
 }
 
