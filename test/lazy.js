@@ -3,7 +3,7 @@
 "use strict";
 
 var expect = require('chai').expect;
-var welsh = require('../index');
+var welsh = require('../lib');
 
 describe("Lazy Executors", function () {
   it("should probably work with 'then'", function (done) {

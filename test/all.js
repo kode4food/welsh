@@ -3,20 +3,19 @@
 "use strict";
 
 var expect = require('chai').expect;
-var createWelshDeferred = require('../lib/deferred').createWelshDeferred;
-var createWelshPromise = require('../lib/promise').createWelshPromise;
+var welsh = require('../lib');
 
 describe("Welsh 'all()' Implementation", function () {
   it("should support args with promises and deferreds", function (done) {
-    var p1 = createWelshPromise();
-    var p2 = createWelshPromise();
-    var d1 = createWelshDeferred();
-    var d2 = createWelshDeferred();
+    var p1 = welsh.promise();
+    var p2 = welsh.promise();
+    var d1 = welsh.deferred();
+    var d2 = welsh.deferred();
     d2.then(function (result) {
       return result + ' modified';
     });
 
-    var all = createWelshPromise.all('hello', p1, p2, d1, d2, 37);
+    var all = welsh.promise.all('hello', p1, p2, d1, d2, 37);
     all.then(function (arr) {
       expect(arr.length).to.equal(6);
       expect(arr[0]).to.equal('hello');
@@ -35,15 +34,15 @@ describe("Welsh 'all()' Implementation", function () {
   });
 
   it("should support array with promises and deferreds", function (done) {
-    var p1 = createWelshPromise();
-    var p2 = createWelshPromise();
-    var d1 = createWelshDeferred();
-    var d2 = createWelshDeferred();
+    var p1 = welsh.promise();
+    var p2 = welsh.promise();
+    var d1 = welsh.deferred();
+    var d2 = welsh.deferred();
     d2.then(function (result) {
       return result + ' modified';
     });
 
-    var all = createWelshPromise.all(['hello', p1, p2, d1, d2, 37]);
+    var all = welsh.promise.all(['hello', p1, p2, d1, d2, 37]);
     all.then(function (arr) {
       expect(arr.length).to.equal(6);
       expect(arr[0]).to.equal('hello');
@@ -62,15 +61,15 @@ describe("Welsh 'all()' Implementation", function () {
   });
 
   it("should short-circuit on any rejection", function (done) {
-    var p1 = createWelshPromise();
-    var p2 = createWelshPromise();
-    var d1 = createWelshDeferred();
-    var d2 = createWelshDeferred();
+    var p1 = welsh.promise();
+    var p2 = welsh.promise();
+    var d1 = welsh.deferred();
+    var d2 = welsh.deferred();
     d2.then(function (result) {
       return result + ' modified';
     });
 
-    var all = createWelshPromise.all(['hello', p1, p2, d1, d2, 37]);
+    var all = welsh.promise.all(['hello', p1, p2, d1, d2, 37]);
     all.then(undefined, function (reason) {
       expect(reason).to.equal('d1 rejected');
       done();
@@ -83,7 +82,7 @@ describe("Welsh 'all()' Implementation", function () {
   });
 
   it("should handle empty set", function (done) {
-    var all = createWelshPromise.all([]);
+    var all = welsh.promise.all([]);
     all.then(function (result) {
       expect(result).is.array;
       expect(result).length.is(0);

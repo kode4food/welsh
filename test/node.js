@@ -3,9 +3,8 @@
 "use strict";
 
 var fs = require('fs');
-var path = require('path');
 var expect = require('chai').expect;
-var welsh = require('../index');
+var welsh = require('../lib');
 
 describe("Welsh 'toNode()' Implementation", function () {
   it("should probably work", function (done) {
@@ -43,9 +42,8 @@ describe("Welsh 'toNode()' Implementation", function () {
 
 describe("Welsh 'fromNode()' Implementation", function () {
   it("should probably work with resolves", function (done) {
-    var filename = path.join(__dirname, 'node.js');
     var readFilePromise = welsh.promise.fromNode(fs.readFile);
-    readFilePromise(filename).then(function (result) {
+    readFilePromise(__filename).then(function (result) {
       var str = result.toString();
       expect(/"use strict";/.test(str)).to.be.true;
       done();
@@ -53,9 +51,8 @@ describe("Welsh 'fromNode()' Implementation", function () {
   });
 
   it("should probably work with rejects", function (done) {
-    var filename = path.join(__dirname, 'garbage.not.there');
     var readFilePromise = welsh.promise.fromNode(fs.readFile);
-    readFilePromise(filename).catch(function (reason) {
+    readFilePromise('garbage.not.there').catch(function (reason) {
       expect(reason).to.not.be.null;
       done();
     });
