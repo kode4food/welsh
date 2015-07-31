@@ -406,7 +406,7 @@ var isArray = (function () {
 }());
 
 /* istanbul ignore next */
-var nextTick = (function () {
+var queueCall = (function () {
   if ( typeof setImmediate === 'function' ) {
     return setImmediate;
   }
@@ -450,31 +450,6 @@ function getThenFunction(value) {
   return bindThis(then, value);
 }
 
-function createCallQueue() {
-  var queuedCalls = [];
-  return queueCall;
-
-  function queueCall(callback) {
-    queuedCalls.push(callback);
-    if ( queuedCalls.length > 1 ) {
-      // nextTick has already been called
-      return;
-    }
-    nextTick(performCalls);
-  }
-
-  function performCalls() {
-    var callbacks = queuedCalls;
-    queuedCalls = [];
-    for ( var i = 0; i < callbacks.length; i++ ) {
-      callbacks[i]();
-    }
-    if ( queuedCalls.length ) {
-      nextTick(performCalls);
-    }
-  }
-}
-
 function tryCatch(tryBlock, catchBlock) {
   if ( typeof tryBlock !== 'function' ) {
     return;
@@ -499,8 +474,8 @@ function extractArrayArguments() {
 }
 
 exports.isArray = isArray;
+exports.queueCall = queueCall;
 exports.getThenFunction = getThenFunction;
-exports.createCallQueue = createCallQueue;
 exports.tryCatch = tryCatch;
 exports.extractArrayArguments = extractArrayArguments;
 
@@ -522,7 +497,7 @@ exports.deferred = decorated.createDecoratedDeferred;
 "use strict";
 
 var helpers = require('./helpers');
-var createCallQueue = helpers.createCallQueue;
+var queueCall = helpers.queueCall;
 var getThenFunction = helpers.getThenFunction;
 
 var fulfilledState = 1;
@@ -530,7 +505,6 @@ var rejectedState = 2;
 
 function createWelshPromise(executor, createPromise) {
   var welshInterface, state, settledResult, head, tail;
-  var queueCall = createCallQueue();
 
   if ( typeof executor === 'function' ) {
     welshInterface = {
