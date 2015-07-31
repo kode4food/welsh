@@ -1,6 +1,6 @@
 {
   "name": "welsh",
-  "version": "2.1.1",
+  "version": "2.1.2",
   "description": " A+ Promises and Deferreds à la Twisted",
   "main": "index.js",
   "scripts": {
