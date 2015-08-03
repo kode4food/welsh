@@ -7,12 +7,12 @@ var welsh = require('../lib');
 
 describe("Welsh 'race()' Implementation", function () {
   it("should probably work", function (done) {
-    var p1 = welsh.promise();
-    var p2 = welsh.promise();
-    var d1 = welsh.deferred();
-    var d2 = welsh.deferred();
+    var p1 = new welsh.Promise();
+    var p2 = new welsh.Promise();
+    var d1 = new welsh.Deferred();
+    var d2 = new welsh.Deferred();
 
-    var race = welsh.promise.race(p1, p2, d1, d2);
+    var race = welsh.Promise.race(p1, p2, d1, d2);
     race.then(function (result) {
       expect(result).to.equal('d1 resolved');
       done();
@@ -25,12 +25,12 @@ describe("Welsh 'race()' Implementation", function () {
   });
 
   it("should allow non-promises to kick ass in the race", function (done) {
-    var p1 = welsh.promise();
-    var p2 = welsh.promise();
-    var d1 = welsh.deferred();
-    var d2 = welsh.deferred();
+    var p1 = new welsh.Promise();
+    var p2 = new welsh.Promise();
+    var d1 = new welsh.Deferred();
+    var d2 = new welsh.Deferred();
 
-    var race = welsh.deferred.race(p1, p2, d1, d2, 37);
+    var race = welsh.Deferred.race(p1, p2, d1, d2, 37);
     race.then(function (result) {
       expect(result).to.equal(37);
     });

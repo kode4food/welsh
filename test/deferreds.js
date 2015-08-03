@@ -7,7 +7,7 @@ var welsh = require('../lib');
 
 describe("Welsh Deferreds", function () {
   it("should work", function (done) {
-    welsh.deferred(function (resolve, reject) {
+    new welsh.Deferred(function (resolve, reject) {
       expect(resolve).to.be.a('function');
       expect(reject).to.be.a('function');
       resolve('bill');
@@ -19,9 +19,9 @@ describe("Welsh Deferreds", function () {
       return '"---' + result + '---"';
     }).then(/* fall through */).then(function (result) {
       expect(result).to.equal('"---hello bill---"');
-      var np = welsh.deferred();
+      var np = new welsh.Deferred();
       setTimeout(function () {
-        var another = welsh.deferred();
+        var another = new welsh.Deferred();
         np.resolve(another);
         setTimeout(function () {
           another.resolve('***' + result + '***');
@@ -38,7 +38,7 @@ describe("Welsh Deferreds", function () {
   });
 
   it("should handle exceptions", function (done) {
-    var p = welsh.deferred();
+    var p = new welsh.Deferred();
 
     p.catch(function (err) {
       expect(err).to.equal("an error!");
@@ -55,14 +55,14 @@ describe("Welsh Deferreds", function () {
   });
 
   it("should handle returned Deferreds that reject", function (done) {
-    var p = welsh.deferred();
+    var p = new welsh.Deferred();
 
     p.catch(function (err) {
       expect(err).to.equal("an error!");
       throw 'totally ' + err;
     }).catch(function (result) {
       expect(result).to.equal('totally an error!');
-      var np = welsh.deferred();
+      var np = new welsh.Deferred();
       setTimeout(function () {
         np.reject('it was ' + result);
       }, 100);
@@ -76,7 +76,7 @@ describe("Welsh Deferreds", function () {
   });
 
   it("should accept values before 'then'", function (done) {
-    var p = welsh.deferred();
+    var p = new welsh.Deferred();
     p.resolve('hello');
     p.then(function (result) {
       expect(result).to.equal('hello');
@@ -86,7 +86,7 @@ describe("Welsh Deferreds", function () {
 
   it("should not re-enter if you re-resolve", function (done) {
     var count = 0;
-    var p = welsh.deferred().then(function (result) {
+    var p = new welsh.Deferred().then(function (result) {
       expect(++count).to.equal(1);
       expect(result).to.equal('hello');
 
@@ -108,7 +108,7 @@ describe("Welsh Deferreds", function () {
   });
 
   it("should be able to continue", function (done) {
-    var p = welsh.deferred();
+    var p = new welsh.Deferred();
 
     var q = p.then(function (result) {
       expect(result).to.equal('Bob');
@@ -128,7 +128,7 @@ describe("Welsh Deferreds", function () {
   });
 
   it("should allow re-entrant 'then'", function (done) {
-    var r, p = welsh.deferred();
+    var r, p = new welsh.Deferred();
 
     var q = p.then(function (result) {
       expect(result).to.equal('Bill');
@@ -153,7 +153,7 @@ describe("Welsh Deferreds", function () {
 
   it("should allow cancel", function (done) {
     var called = false;
-    var p = welsh.deferred();
+    var p = new welsh.Deferred();
     p.then(function (result) {
       return 'hello, ' + result;
     }).then(function (result) {
@@ -173,7 +173,7 @@ describe("Welsh Deferreds", function () {
   });
 
   it("should reject if the executor explodes", function (done) {
-    welsh.deferred(function (resolve, reject) {
+    new welsh.Deferred(function (resolve, reject) {
       throw "EXPLODED!";
     }).catch(function (reason) {
       expect(reason).to.equal("EXPLODED!");

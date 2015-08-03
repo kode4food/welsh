@@ -20,7 +20,7 @@ Then, write code.  This will create a Promise:
 ```javascript
 var welsh = require('welsh');
 
-welsh.promise(function (resolve, reject) {
+new welsh.Promise(function (resolve, reject) {
   resolve("Bill");
 }).then(function (result) {
   return 'Hello, ' + result + '!';
@@ -34,7 +34,7 @@ while this will create a Deferred:
 ```javascript
 var welsh = require('welsh');
 
-welsh.deferred(function (resolve, reject) {
+new welsh.Deferred(function (resolve, reject) {
   resolve("Bill");
 }).then(function (result) {
   return 'Hello, ' + result + '!';
@@ -60,7 +60,7 @@ But what are you doing most of the time with Promises?  You're usually creating 
 Start off with a Deferred when you need close to bare-metal performance, and then generate a promise using `toPromise()` when you need to pass the result around. You can even use `toDeferred()` to convert a Promise back to a Deferred.
 
 ```javascript
-return welsh.deferred(function (resolve, reject) {
+return new welsh.Deferred(function (resolve, reject) {
   resolve("Bill");
 }).then(function (result) {
   return 'Hello, ' + result + '!';
@@ -72,17 +72,17 @@ return welsh.deferred(function (resolve, reject) {
 In short, use a Deferred if you want to build a fast, isolated, and synchronous dispatch chain that still honors asynchronous 'Thenable' results.  Use a Promise when you need to create multiple branches of intermediate results or you need to pass the Promise into code that you don't control.
 
 ## The Welsh API
-Two (nearly) identical interfaces are exposed.  They are the `promise` and the `deferred` functions.  They are used to create a Promise or a Deferred, respectively.  Each function accepts an optional executor callback that is invoked synchronously and can be used to resolve or reject the promise or deferred that invoked it.
+Two (nearly) identical interfaces are exposed.  They are the `Promise` and the `Deferred` constructors.  They are used to create a Promise or a Deferred, respectively.  Each constructor accepts an optional executor callback that is invoked synchronously and can be used to resolve or reject the promise or deferred that invoked it.
 
 ```javascript
 var welsh = require('welsh');
 
-welsh.promise(function (resolve, reject) {
+new welsh.Promise(function (resolve, reject) {
   // call resolve(result) or reject(reason) somewhere.
   // the one that is called first will win
 });
 
-welsh.deferred(function (resolve, reject) {
+new welsh.Deferred(function (resolve, reject) {
   // call resolve(result) or reject(reason) somewhere.
   // the one that is called first will win
 });
@@ -111,7 +111,7 @@ The Promise or Deferred that is returned will be an Object that contains several
 For example:
 
 ```javascript
-var p = welsh.promise();
+var p = new welsh.Promise();
 
 p.catch(function (reason) {
   console.log(reason);
@@ -139,11 +139,11 @@ The `welsh.promise` and `welsh.deferred` interfaces also expose some additional 
 For example:
 
 ```javascript
-var p1 = welsh.promise();
-var p2 = welsh.promise();
-var d1 = welsh.deferred();
+var p1 = new welsh.Promise();
+var p2 = new welsh.Promise();
+var d1 = new welsh.Deferred();
 
-welsh.promise.race(p1, p2, d1).then(function (result) {
+welsh.Promise.race(p1, p2, d1).then(function (result) {
   console.log(result);
 });
 

@@ -79,22 +79,167 @@ module.exports = WelshBase;
 
 var helpers = require('./helpers');
 var getThenFunction = helpers.getThenFunction;
+var extractArrayArguments = helpers.extractArrayArguments;
 
-var createWelshPromise = require('./promise');
-var createWelshDeferred = require('./deferred');
+var slice = Array.prototype.slice;
 
-function decorateWelshBase(WelshBase) {
-  WelshBase.prototype.toPromise = function () {
-    return convertUsing(this, createWelshPromise);
+function decorateConstructor(Constructor) {
+  Constructor.resolve = createResolve;
+  Constructor.reject = createReject;
+  Constructor.race = createRace;
+  Constructor.all = createAll;
+  Constructor.fromNode = createFromNode;
+  Constructor.lazy = createLazy;
+  return Constructor;
+
+  function createResolve(result) {
+    return new Constructor(function (resolve) {
+      resolve(result);
+    });
+  }
+
+  function createReject(reason) {
+    return new Constructor(function (resolve, reject) {
+      reject(reason);
+    });
+  }
+
+  function createRace() {
+    var args = extractArrayArguments.apply(null, arguments);
+
+    return new Constructor(function (resolve, reject) {
+      try {
+        for ( var i = 0, len = args.length; i < len; i++ ) {
+          var value = args[i];
+          var then = getThenFunction(value);
+          if ( then ) {
+            then(resolve, reject);
+            continue;
+          }
+          resolve(value);
+        }
+      }
+      catch ( err ) {
+        /* istanbul ignore next */
+        reject(err);
+      }
+    });
+  }
+
+  function createAll() {
+    var args = extractArrayArguments.apply(null, arguments);
+
+    return new Constructor(function (resolve, reject) {
+      var waitingFor = args.length;
+
+      for ( var i = 0, len = waitingFor; i < len; i++ ) {
+        var then = getThenFunction(args[i]);
+        if ( then ) {
+          resolveThenAtIndex(then, i);
+          continue;
+        }
+        waitingFor--;
+      }
+
+      if ( !waitingFor ) {
+        resolve(args);
+      }
+
+      function resolveThenAtIndex(then, index) {
+        then(wrappedResolve, wrappedReject);
+
+        function wrappedResolve(result) {
+          args[index] = result;
+          if ( !--waitingFor ) {
+            resolve(args);
+          }
+          return result;
+        }
+
+        function wrappedReject(reason) {
+          reject(reason);
+          throw reason;
+        }
+      }
+    });
+  }
+
+  function createFromNode(nodeFunction) {
+    return nodeWrapper;
+
+    function nodeWrapper() {
+      var wrapperArguments = arguments;
+      return new Constructor(function (resolve, reject) {
+        nodeFunction.apply(null, slice.call(wrapperArguments).concat(callback));
+
+        function callback(err) {
+          if ( err ) {
+            reject(err);
+            return;
+          }
+          resolve(slice.call(arguments, 1));
+        }
+      });
+    }
+  }
+
+  function createLazy(executor) {
+    var resolve, reject, called;
+
+    if ( typeof executor !== 'function' ) {
+      return new Constructor();
+    }
+
+    var deferred = new Constructor(function (_resolve, _reject) {
+      resolve = _resolve;
+      reject = _reject;
+    });
+
+    var originalThen = deferred.then;
+    deferred.then = function (onFulfilled, onRejected) {
+      if ( !called ) {
+        deferred.then = originalThen;
+        called = true;
+        executor(resolve, reject);
+      }
+      return originalThen(onFulfilled, onRejected);
+    };
+
+    return deferred;
+  }
+}
+
+exports.decorateConstructor = decorateConstructor;
+
+},{"./helpers":7}],5:[function(require,module,exports){
+/*
+ * Welsh (Promises, but not really)
+ * Licensed under the MIT License
+ * see LICENSE.md
+ *
+ * @author Thomas S. Bradford (kode4food.it)
+ */
+
+"use strict";
+
+var helpers = require('./helpers');
+var getThenFunction = helpers.getThenFunction;
+
+var WelshPromise = require('./promise');
+var WelshDeferred = require('./deferred');
+
+function decoratePrototype(prototype) {
+  prototype.toPromise = function () {
+    return convertUsing(this, WelshPromise);
   };
 
-  WelshBase.prototype.toDeferred = function () {
-    return convertUsing(this, createWelshDeferred);
+  prototype.toDeferred = function () {
+    return convertUsing(this, WelshDeferred);
   };
 }
 
-function convertUsing(deferred, generator) {
-  return generator(function (resolve, reject) {
+function convertUsing(deferred, Constructor) {
+  return new Constructor(function (resolve, reject) {
     var then = getThenFunction(deferred);
     then(wrappedResolve, wrappedReject);
 
@@ -110,9 +255,9 @@ function convertUsing(deferred, generator) {
   });
 }
 
-exports.decorateWelshBase = decorateWelshBase;
+exports.decoratePrototype = decoratePrototype;
 
-},{"./deferred":5,"./helpers":7,"./promise":9}],5:[function(require,module,exports){
+},{"./deferred":6,"./helpers":7,"./promise":9}],6:[function(require,module,exports){
 /*
  * Welsh (Promises, but not really)
  * Licensed under the MIT License
@@ -132,14 +277,17 @@ var fulfilledState = 1;
 var rejectedState = 2;
 var canceledState = 3;
 
-function createWelshDeferred(executor) {
+WelshDeferred.prototype = new WelshBase();
+
+function WelshDeferred(executor) {
+  var self = this;
+
   var state, running, pendingResult;
   var pendingHandlers = [];
   var pendingIndex = 0;
 
-  var welshInterface = new WelshBase();
-  welshInterface.then = appendThen;
-  welshInterface.cancel = cancel;
+  this.then = appendThen;
+  this.cancel = cancel;
 
   if ( typeof executor === 'function' ) {
     try {
@@ -150,11 +298,9 @@ function createWelshDeferred(executor) {
     }
   }
   else {
-    welshInterface.resolve = resolve;
-    welshInterface.reject = reject;
+    this.resolve = resolve;
+    this.reject = reject;
   }
-
-  return welshInterface;
 
   function resolve(result) {
     return start(fulfilledState, result);
@@ -170,7 +316,7 @@ function createWelshDeferred(executor) {
     }
     state = newState;
     proceed(result);
-    return welshInterface;
+    return self;
   }
 
   function appendThen(onFulfilled, onRejected) {
@@ -182,7 +328,7 @@ function createWelshDeferred(executor) {
       proceed(pendingResult);
     }
 
-    return welshInterface;
+    return self;
   }
 
   function cancel() {
@@ -190,7 +336,7 @@ function createWelshDeferred(executor) {
     pendingIndex = 0;
     running = false;
     state = canceledState;
-    return welshInterface;
+    return self;
   }
 
   function proceed(result) {
@@ -238,154 +384,9 @@ function createWelshDeferred(executor) {
   }
 }
 
-module.exports = createWelshDeferred;
+module.exports = WelshDeferred;
 
-},{"./base":3,"./helpers":7}],6:[function(require,module,exports){
-/*
- * Welsh (Promises, but not really)
- * Licensed under the MIT License
- * see LICENSE.md
- *
- * @author Thomas S. Bradford (kode4food.it)
- */
-
-"use strict";
-
-var helpers = require('./helpers');
-var getThenFunction = helpers.getThenFunction;
-var extractArrayArguments = helpers.extractArrayArguments;
-
-var slice = Array.prototype.slice;
-
-function decorateGenerator(deferredGenerator) {
-  deferredGenerator.resolve = createResolve;
-  deferredGenerator.reject = createReject;
-  deferredGenerator.race = createRace;
-  deferredGenerator.all = createAll;
-  deferredGenerator.fromNode = createFromNode;
-  deferredGenerator.lazy = createLazy;
-  return deferredGenerator;
-
-  function createResolve(result) {
-    return deferredGenerator(function (resolve) {
-      resolve(result);
-    });
-  }
-
-  function createReject(reason) {
-    return deferredGenerator(function (resolve, reject) {
-      reject(reason);
-    });
-  }
-
-  function createRace() {
-    var args = extractArrayArguments.apply(null, arguments);
-
-    return deferredGenerator(function (resolve, reject) {
-      try {
-        for ( var i = 0, len = args.length; i < len; i++ ) {
-          var value = args[i];
-          var then = getThenFunction(value);
-          if ( then ) {
-            then(resolve, reject);
-            continue;
-          }
-          resolve(value);
-        }
-      }
-      catch ( err ) {
-        /* istanbul ignore next */
-        reject(err);
-      }
-    });
-  }
-
-  function createAll() {
-    var args = extractArrayArguments.apply(null, arguments);
-
-    return deferredGenerator(function (resolve, reject) {
-      var waitingFor = args.length;
-
-      for ( var i = 0, len = waitingFor; i < len; i++ ) {
-        var then = getThenFunction(args[i]);
-        if ( then ) {
-          resolveThenAtIndex(then, i);
-          continue;
-        }
-        waitingFor--;
-      }
-
-      if ( !waitingFor ) {
-        resolve(args);
-      }
-
-      function resolveThenAtIndex(then, index) {
-        then(wrappedResolve, wrappedReject);
-
-        function wrappedResolve(result) {
-          args[index] = result;
-          if ( !--waitingFor ) {
-            resolve(args);
-          }
-          return result;
-        }
-
-        function wrappedReject(reason) {
-          reject(reason);
-          throw reason;
-        }
-      }
-    });
-  }
-
-  function createFromNode(nodeFunction) {
-    return nodeWrapper;
-
-    function nodeWrapper() {
-      var wrapperArguments = arguments;
-      return deferredGenerator(function (resolve, reject) {
-        nodeFunction.apply(null, slice.call(wrapperArguments).concat(callback));
-
-        function callback(err) {
-          if ( err ) {
-            reject(err);
-            return;
-          }
-          resolve(slice.call(arguments, 1));
-        }
-      });
-    }
-  }
-
-  function createLazy(executor) {
-    var resolve, reject, called;
-
-    if ( typeof executor !== 'function' ) {
-      return deferredGenerator();
-    }
-
-    var deferred = deferredGenerator(function (_resolve, _reject) {
-      resolve = _resolve;
-      reject = _reject;
-    });
-
-    var originalThen = deferred.then;
-    deferred.then = function (onFulfilled, onRejected) {
-      if ( !called ) {
-        deferred.then = originalThen;
-        called = true;
-        executor(resolve, reject);
-      }
-      return originalThen(onFulfilled, onRejected);
-    };
-
-    return deferred;
-  }
-}
-
-exports.decorateGenerator = decorateGenerator;
-
-},{"./helpers":7}],7:[function(require,module,exports){
+},{"./base":3,"./helpers":7}],7:[function(require,module,exports){
 /*
  * Welsh (Promises, but not really)
  * Licensed under the MIT License
@@ -472,14 +473,14 @@ exports.extractArrayArguments = extractArrayArguments;
 
 // Load and decorate the WelshBase constructor
 var WelshBase = require('./base');
-require('./convert').decorateWelshBase(WelshBase);
+require('./convert').decoratePrototype(WelshBase.prototype);
 
 // Decorate the Deferred generator functions
-var generator = require('./generator');
-exports.promise = generator.decorateGenerator(require('./promise'));
-exports.deferred = generator.decorateGenerator(require('./deferred'));
+var constructor = require('./constructor');
+exports.Promise = constructor.decorateConstructor(require('./promise'));
+exports.Deferred = constructor.decorateConstructor(require('./deferred'));
 
-},{"./base":3,"./convert":4,"./deferred":5,"./generator":6,"./promise":9}],9:[function(require,module,exports){
+},{"./base":3,"./constructor":4,"./convert":5,"./deferred":6,"./promise":9}],9:[function(require,module,exports){
 /*
  * Welsh (Promises, but not really)
  * Licensed under the MIT License
@@ -501,27 +502,27 @@ var WelshBase = require('./base');
 var fulfilledState = 1;
 var rejectedState = 2;
 
-function createWelshPromise(executor) {
-  var state, settledResult, branched, pendingHandlers;
+WelshPromise.prototype = new WelshBase();
 
-  var welshInterface = new WelshBase();
-  welshInterface.then = createThen;
+function WelshPromise(executor) {
+  var state, settledResult, branched, pendingHandlers;
+  var self = this;
+
+  this.then = createThen;
 
   if ( typeof executor === 'function' ) {
     doResolve(executor);
   }
   else {
-    welshInterface.resolve = resolve;
-    welshInterface.reject = reject;
+    this.resolve = resolve;
+    this.reject = reject;
   }
-
-  return welshInterface;
 
   function resolve(result) {
     if ( state ) {
       return;
     }
-    if ( welshInterface === result ) {
+    if ( self === result ) {
       reject(new TypeError("Um, yeah, a Promise can't resolve itself"));
       return;
     }
@@ -573,7 +574,7 @@ function createWelshPromise(executor) {
   }
 
   function createThen(onFulfilled, onRejected) {
-    return createWelshPromise(thenResolver);
+    return new WelshPromise(thenResolver);
 
     function thenResolver(resolve, reject) {
       addPending(fulfilledHandler, rejectedHandler);
@@ -646,7 +647,7 @@ function createWelshPromise(executor) {
   }
 }
 
-module.exports = createWelshPromise;
+module.exports = WelshPromise;
 
 },{"./base":3,"./helpers":7,"./queue":10}],10:[function(require,module,exports){
 /*

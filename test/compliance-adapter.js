@@ -4,7 +4,7 @@ var welsh = require('../lib');
 
 module.exports = {
   deferred: function () {
-    var promise = welsh.promise();
+    var promise = new welsh.Promise();
     promise.promise = promise;
     return promise;
   }

@@ -10,12 +10,12 @@ describe("Welsh 'toNode()' Implementation", function () {
   it("should probably work", function (done) {
     var waiting = 2;
 
-    welsh.promise.resolve('hello!').then(function (result) {
+    welsh.Promise.resolve('hello!').then(function (result) {
       expect(result).to.equal('hello!');
       return 'i say ' + result;
     }).toNode(resolvedCallback);
 
-    welsh.promise.resolve('hello!').then(function (result) {
+    welsh.Promise.resolve('hello!').then(function (result) {
       expect(result).to.equal('hello!');
       throw 'i say i broke!';
     }).toNode(rejectedCallback);
@@ -42,7 +42,7 @@ describe("Welsh 'toNode()' Implementation", function () {
 
 describe("Welsh 'fromNode()' Implementation", function () {
   it("should probably work with resolves", function (done) {
-    var readFilePromise = welsh.promise.fromNode(fs.readFile);
+    var readFilePromise = welsh.Promise.fromNode(fs.readFile);
     readFilePromise(__filename).then(function (result) {
       var str = result.toString();
       expect(/"use strict";/.test(str)).to.be.true;
@@ -51,7 +51,7 @@ describe("Welsh 'fromNode()' Implementation", function () {
   });
 
   it("should probably work with rejects", function (done) {
-    var readFilePromise = welsh.promise.fromNode(fs.readFile);
+    var readFilePromise = welsh.Promise.fromNode(fs.readFile);
     readFilePromise('garbage.not.there').catch(function (reason) {
       expect(reason).to.not.be.null;
       done();

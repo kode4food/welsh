@@ -9,7 +9,7 @@ describe("Lazy Executors", function () {
   it("should probably work with 'then'", function (done) {
     var mutated = 0;
 
-    var p = welsh.promise.lazy(function (resolve) {
+    var p = welsh.Promise.lazy(function (resolve) {
       expect(mutated).to.equal(0);
       setTimeout(function () {
         mutated++;
@@ -37,7 +37,7 @@ describe("Lazy Executors", function () {
   it("should probably work with 'catch' as well", function (done) {
     var mutated = false;
 
-    var p = welsh.deferred.lazy(function (resolve, reject) {
+    var p = welsh.Deferred.lazy(function (resolve, reject) {
       expect(mutated).to.be.false;
       setTimeout(function () {
         mutated = true;
@@ -57,7 +57,7 @@ describe("Lazy Executors", function () {
   });
 
   it("should probably work without an executor", function (done) {
-    var p = welsh.promise.lazy();
+    var p = welsh.Promise.lazy();
     p.then(function (result) {
       expect(result).to.equal('value');
       done();
