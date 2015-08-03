@@ -225,18 +225,17 @@ exports.decorateConstructor = decorateConstructor;
 var helpers = require('./helpers');
 var getThenFunction = helpers.getThenFunction;
 
+var WelshBase = require('./base');
 var WelshPromise = require('./promise');
 var WelshDeferred = require('./deferred');
 
-function decoratePrototype(prototype) {
-  prototype.toPromise = function () {
-    return convertUsing(this, WelshPromise);
-  };
+WelshBase.prototype.toPromise = function () {
+  return convertUsing(this, WelshPromise);
+};
 
-  prototype.toDeferred = function () {
-    return convertUsing(this, WelshDeferred);
-  };
-}
+WelshBase.prototype.toDeferred = function () {
+  return convertUsing(this, WelshDeferred);
+};
 
 function convertUsing(deferred, Constructor) {
   return new Constructor(function (resolve, reject) {
@@ -255,9 +254,7 @@ function convertUsing(deferred, Constructor) {
   });
 }
 
-exports.decoratePrototype = decoratePrototype;
-
-},{"./deferred":6,"./helpers":7,"./promise":9}],6:[function(require,module,exports){
+},{"./base":3,"./deferred":6,"./helpers":7,"./promise":9}],6:[function(require,module,exports){
 /*
  * Welsh (Promises, but not really)
  * Licensed under the MIT License
@@ -471,16 +468,18 @@ exports.extractArrayArguments = extractArrayArguments;
 },{}],8:[function(require,module,exports){
 "use strict";
 
-// Load and decorate the WelshBase constructor
-var WelshBase = require('./base');
-require('./convert').decoratePrototype(WelshBase.prototype);
+// Decorate the WelshBase prototype
+require('./convert');
+
+var WelshPromise = require('./promise');
+var WelshDeferred = require('./deferred');
 
 // Decorate the Deferred generator functions
 var constructor = require('./constructor');
-exports.Promise = constructor.decorateConstructor(require('./promise'));
-exports.Deferred = constructor.decorateConstructor(require('./deferred'));
+exports.Promise = constructor.decorateConstructor(WelshPromise);
+exports.Deferred = constructor.decorateConstructor(WelshDeferred);
 
-},{"./base":3,"./constructor":4,"./convert":5,"./deferred":6,"./promise":9}],9:[function(require,module,exports){
+},{"./constructor":4,"./convert":5,"./deferred":6,"./promise":9}],9:[function(require,module,exports){
 /*
  * Welsh (Promises, but not really)
  * Licensed under the MIT License
@@ -574,35 +573,36 @@ function WelshPromise(executor) {
   }
 
   function createThen(onFulfilled, onRejected) {
-    return new WelshPromise(thenResolver);
+    var resolve, reject;
+    addPending(fulfilledHandler, rejectedHandler);
+    return new WelshPromise(function (_resolve, _reject) {
+      resolve = _resolve;
+      reject = _reject;
+    });
 
-    function thenResolver(resolve, reject) {
-      addPending(fulfilledHandler, rejectedHandler);
-
-      function fulfilledHandler(result) {
-        if ( typeof onFulfilled !== 'function' ) {
-          resolve(result);
-          return;
-        }
-        try {
-          resolve(onFulfilled(result));
-        }
-        catch ( err ) {
-          reject(err);
-        }
+    function fulfilledHandler(result) {
+      if ( typeof onFulfilled !== 'function' ) {
+        resolve(result);
+        return;
       }
+      try {
+        resolve(onFulfilled(result));
+      }
+      catch ( err ) {
+        reject(err);
+      }
+    }
 
-      function rejectedHandler(reason) {
-        if ( typeof onRejected !== 'function' ) {
-          reject(reason);
-          return;
-        }
-        try {
-          resolve(onRejected(reason));
-        }
-        catch ( err ) {
-          reject(err);
-        }
+    function rejectedHandler(reason) {
+      if ( typeof onRejected !== 'function' ) {
+        reject(reason);
+        return;
+      }
+      try {
+        resolve(onRejected(reason));
+      }
+      catch ( err ) {
+        reject(err);
       }
     }
   }
