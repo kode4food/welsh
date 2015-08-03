@@ -24,6 +24,11 @@ var tryCatch = helpers.tryCatch;
 
 function WelshBase() {}
 
+/* istanbul ignore next */
+WelshBase.prototype.then = function (onFulfilled, onRejected) {
+  throw new Error("Not Implemented");
+};
+
 WelshBase.prototype['catch'] = function (onRejected) {
   return this.then(undefined, onRejected);
 };
@@ -279,6 +284,11 @@ var canceledState = 3;
 
 WelshDeferred.prototype = new WelshBase();
 
+/* istanbul ignore next */
+WelshDeferred.prototype.cancel = function () {
+  throw new Error("Not Implemented");
+};
+
 function WelshDeferred(executor) {
   var self = this;
 
@@ -502,15 +512,32 @@ var WelshBase = require('./base');
 var fulfilledState = 1;
 var rejectedState = 2;
 
+function Private() {}
+
+/* istanbul ignore next */
+Private.prototype.resolve = function (result) {
+  throw new Error("Not Implemented");
+};
+
+/* istanbul ignore next */
+Private.prototype.reject = function (reason) {
+  throw new Error("Not Implemented");
+};
+
 WelshPromise.prototype = new WelshBase();
 
-function WelshPromise(executor) {
-  var state, settledResult, branched, pendingHandlers;
+function WelshPromise(_private, executor) {
   var self = this;
+
+  var state, settledResult, branched, pendingHandlers;
 
   this.then = createThen;
 
-  if ( typeof executor === 'function' ) {
+  if ( _private ) {
+    _private.resolve = resolve;
+    _private.reject = reject;
+  }
+  else if ( typeof executor === 'function' ) {
     doResolve(executor);
   }
   else {
@@ -574,35 +601,34 @@ function WelshPromise(executor) {
   }
 
   function createThen(onFulfilled, onRejected) {
-    return new WelshPromise(thenResolver);
+    var _private = new Private();
+    var result = new WelshPromise(_private);
+    addPending(fulfilledHandler, rejectedHandler);
+    return result;
 
-    function thenResolver(resolve, reject) {
-      addPending(fulfilledHandler, rejectedHandler);
-
-      function fulfilledHandler(result) {
-        if ( typeof onFulfilled !== 'function' ) {
-          resolve(result);
-          return;
-        }
-        try {
-          resolve(onFulfilled(result));
-        }
-        catch ( err ) {
-          reject(err);
-        }
+    function fulfilledHandler(result) {
+      if ( typeof onFulfilled !== 'function' ) {
+        _private.resolve(result);
+        return;
       }
+      try {
+        _private.resolve(onFulfilled(result));
+      }
+      catch ( err ) {
+        _private.reject(err);
+      }
+    }
 
-      function rejectedHandler(reason) {
-        if ( typeof onRejected !== 'function' ) {
-          reject(reason);
-          return;
-        }
-        try {
-          resolve(onRejected(reason));
-        }
-        catch ( err ) {
-          reject(err);
-        }
+    function rejectedHandler(reason) {
+      if ( typeof onRejected !== 'function' ) {
+        _private.reject(reason);
+        return;
+      }
+      try {
+        _private.resolve(onRejected(reason));
+      }
+      catch ( err ) {
+        _private.reject(err);
       }
     }
   }
@@ -647,7 +673,9 @@ function WelshPromise(executor) {
   }
 }
 
-module.exports = WelshPromise;
+module.exports = function (executor) {
+  return new WelshPromise(undefined, executor);
+};
 
 },{"./base":3,"./helpers":7,"./queue":10}],10:[function(require,module,exports){
 /*
