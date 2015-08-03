@@ -519,17 +519,17 @@ function createWelshPromise(executor) {
 
   function resolve(result) {
     if ( state ) {
-      return welshInterface;
+      return;
     }
     if ( welshInterface === result ) {
       reject(new TypeError("Um, yeah, a Promise can't resolve itself"));
-      return welshInterface;
+      return;
     }
     try {
       var then = getThenFunction(result);
       if ( then ) {
         doResolve(then);
-        return welshInterface;
+        return;
       }
       state = fulfilledState;
       settledResult = result;
@@ -538,17 +538,15 @@ function createWelshPromise(executor) {
     catch ( err ) {
       reject(err);
     }
-    return welshInterface;
   }
 
   function reject(reason) {
     if ( state ) {
-      return welshInterface;
+      return;
     }
     state = rejectedState;
     settledResult = reason;
     queueCall(notifyPending);
-    return welshInterface;
   }
 
   function doResolve(executor) {
@@ -578,10 +576,13 @@ function createWelshPromise(executor) {
     return createWelshPromise(thenResolver);
 
     function thenResolver(resolve, reject) {
-      addPending(typeof onFulfilled === 'function' ? fulfilledHandler : resolve,
-                 typeof onRejected === 'function' ? rejectedHandler : reject);
+      addPending(fulfilledHandler, rejectedHandler);
 
       function fulfilledHandler(result) {
+        if ( typeof onFulfilled !== 'function' ) {
+          resolve(result);
+          return;
+        }
         try {
           resolve(onFulfilled(result));
         }
@@ -591,6 +592,10 @@ function createWelshPromise(executor) {
       }
 
       function rejectedHandler(reason) {
+        if ( typeof onRejected !== 'function' ) {
+          reject(reason);
+          return;
+        }
         try {
           resolve(onRejected(reason));
         }
@@ -602,24 +607,26 @@ function createWelshPromise(executor) {
   }
 
   function addPending(onFulfilled, onRejected) {
-    if ( !state ) {
-      var item = [undefined, onFulfilled, onRejected];
-
-      if ( !pendingHandlers ) {
-        pendingHandlers = item;
-      }
-      else if ( branched ) {
-        pendingHandlers[pendingHandlers.length] = item;
-      }
-      else {
-        pendingHandlers = [pendingHandlers, item];
-        branched = true;
-      }
+    if ( state ) {
+      queueCall(function () {
+        (state === fulfilledState ? onFulfilled : onRejected)(settledResult);
+      });
       return;
     }
-    queueCall(function () {
-      (state === fulfilledState ? onFulfilled : onRejected)(settledResult);
-    });
+
+    var item = [undefined, onFulfilled, onRejected];
+    if ( !pendingHandlers ) {
+      pendingHandlers = item;
+      return;
+    }
+
+    if ( !branched ) {
+      pendingHandlers = [pendingHandlers, item];
+      branched = true;
+      return;
+    }
+
+    pendingHandlers[pendingHandlers.length] = item;
   }
 
   function notifyPending() {
