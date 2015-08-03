@@ -19,7 +19,7 @@ describe("Welsh Deferreds", function () {
       return '"---' + result + '---"';
     }).then(/* fall through */).then(function (result) {
       expect(result).to.equal('"---hello bill---"');
-      var np = new welsh.Deferred();
+      var np = welsh.deferred();
       setTimeout(function () {
         var another = new welsh.Deferred();
         np.resolve(another);

@@ -21,7 +21,7 @@ describe("Welsh Promises", function () {
       expect(result).to.equal('"---hello bill---"');
       var np = new welsh.Promise();
       setTimeout(function () {
-        var another = new welsh.Promise();
+        var another = welsh.promise();
         np.resolve(another);
         setTimeout(function () {
           another.resolve('***' + result + '***');

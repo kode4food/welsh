@@ -477,8 +477,20 @@ require('./convert').decoratePrototype(WelshBase.prototype);
 
 // Decorate the Deferred generator functions
 var constructor = require('./constructor');
-exports.Promise = constructor.decorateConstructor(require('./promise'));
-exports.Deferred = constructor.decorateConstructor(require('./deferred'));
+var Promise = constructor.decorateConstructor(require('./promise'));
+var Deferred = constructor.decorateConstructor(require('./deferred'));
+
+// Export Stuff
+exports.Promise = Promise;
+exports.Deferred = Deferred;
+
+exports.promise = function (executor) {
+  return new Promise(executor);
+};
+
+exports.deferred = function (executor) {
+  return new Deferred(executor);
+};
 
 },{"./base":3,"./constructor":4,"./convert":5,"./deferred":6,"./promise":9}],9:[function(require,module,exports){
 /*
