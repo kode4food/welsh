@@ -90,10 +90,6 @@ new welsh.Deferred(function (resolve, reject) {
 
 The Promise or Deferred that is returned will be an Object that contains several Function properties.  Most of these should be familiar.  They are:
 
-`resolve(result?:any)` - Resolves the Promise or Deferred with the specified result.  This Function is only present if no executor was defined in the creation of the Promise/Deferred.
-
-`reject(reason?:any)` - Rejects the Promise or Deferred with the specified reason.  This Function is only present if no executor was defined in the creation of the Promise/Deferred.
-
 `then(onFulfilled?:Function, onRejected?:Function)` - In the case of a Promise, creates a Promise whose value depends on its parent. In the case of a Deferred, adds an onFulfilled and/or onRejected handler to the dispatch chain.
 
 `catch(onRejected?:Function)` - Same as 'then' except that only an `onRejected` callback is provided.
@@ -106,23 +102,17 @@ The Promise or Deferred that is returned will be an Object that contains several
 
 `toDeferred()` - Converts the current Promise or Deferred into a new Deferred.
 
-`cancel()` (for Deferreds only) - Cancels any further callback dispatching on the Deferred.
-
 For example:
 
 ```javascript
-var p = new welsh.Promise();
-
-p.catch(function (reason) {
+welsh.Promise.reject('I reject you!').catch(function (reason) {
   console.log(reason);
 }).finally(function () {
   console.log("all done!");
 });
-
-p.reject('I reject you!');
 ```
 
-The `welsh.promise` and `welsh.deferred` interfaces also expose some additional capabilities in the form of helper and utility functions:
+The `welsh.Promise` and `welsh.Deferred` interfaces also expose some additional capabilities in the form of helper and utility functions:
 
 `resolve(result)` - Creates and returns an immediately resolved Promise or Deferred.
 
@@ -139,15 +129,13 @@ The `welsh.promise` and `welsh.deferred` interfaces also expose some additional 
 For example:
 
 ```javascript
-var p1 = new welsh.Promise();
-var p2 = new welsh.Promise();
-var d1 = new welsh.Deferred();
+var p1 = new welsh.Promise(function () { });
+var p2 = new welsh.Promise(function () { });
+var d1 = new welsh.Deferred(function (resolve) { resolve('D1 Wins!'); });
 
 welsh.Promise.race(p1, p2, d1).then(function (result) {
   console.log(result);
 });
-
-d1.resolve('D1 Wins!');
 ```
 
 ## License (MIT License)

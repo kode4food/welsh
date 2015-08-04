@@ -186,16 +186,12 @@ function decorateConstructor(Constructor) {
   function createLazy(executor) {
     var resolve, reject, called;
 
-    if ( typeof executor !== 'function' ) {
-      return new Constructor();
-    }
-
     var deferred = new Constructor(function (_resolve, _reject) {
       resolve = _resolve;
       reject = _reject;
     });
 
-    var originalThen = deferred.then;
+    var originalThen = getThenFunction(deferred);
     deferred.then = function (onFulfilled, onRejected) {
       if ( !called ) {
         deferred.then = originalThen;
@@ -272,7 +268,6 @@ var WelshBase = require('./base');
 
 var fulfilledState = 1;
 var rejectedState = 2;
-var canceledState = 3;
 
 WelshDeferred.prototype = new WelshBase();
 
@@ -284,27 +279,25 @@ function WelshDeferred(executor) {
   var pendingIndex = 0;
 
   this.then = appendThen;
-  this.cancel = cancel;
 
-  if ( typeof executor === 'function' ) {
-    try {
-      executor(resolve, reject);
-    }
-    catch ( err ) {
-      reject(err);
-    }
+  if ( typeof executor !== 'function' ) {
+    reject(new Error("Deferred requires an Executor Function"));
+    return;
   }
-  else {
-    this.resolve = resolve;
-    this.reject = reject;
+
+  try {
+    executor(resolve, reject);
+  }
+  catch ( err ) {
+    reject(err);
   }
 
   function resolve(result) {
-    return start(fulfilledState, result);
+    start(fulfilledState, result);
   }
 
   function reject(reason) {
-    return start(rejectedState, reason);
+    start(rejectedState, reason);
   }
 
   function start(newState, result) {
@@ -313,7 +306,6 @@ function WelshDeferred(executor) {
     }
     state = newState;
     proceed(result);
-    return self;
   }
 
   function appendThen(onFulfilled, onRejected) {
@@ -324,15 +316,6 @@ function WelshDeferred(executor) {
     if ( state && !running ) {
       proceed(pendingResult);
     }
-
-    return self;
-  }
-
-  function cancel() {
-    pendingHandlers = [];
-    pendingIndex = 0;
-    running = false;
-    state = canceledState;
     return self;
   }
 
@@ -509,13 +492,11 @@ function WelshPromise(executor) {
 
   this.then = createThen;
 
-  if ( typeof executor === 'function' ) {
-    doResolve(executor);
+  if ( typeof executor !== 'function' ) {
+    reject(new Error("Promise requires an Executor Function"));
+    return;
   }
-  else {
-    this.resolve = resolve;
-    this.reject = reject;
-  }
+  doResolve(executor);
 
   function resolve(result) {
     if ( state ) {

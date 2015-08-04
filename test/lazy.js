@@ -55,16 +55,4 @@ describe("Lazy Executors", function () {
       }, 100);
     }, 10);
   });
-
-  it("should probably work without an executor", function (done) {
-    var p = welsh.Promise.lazy();
-    p.then(function (result) {
-      expect(result).to.equal('value');
-      done();
-    });
-
-    setTimeout(function () {
-      p.resolve('value');
-    }, 100);
-  });
 });

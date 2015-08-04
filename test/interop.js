@@ -19,15 +19,15 @@ describe("Welsh Interop", function () {
       return '"---' + result + '---"';
     }).then(/* fall through */).then(function (result) {
       expect(result).to.equal('"---hello bill---"');
-      var np = new welsh.Promise();
-      setTimeout(function () {
-        var another = new welsh.Deferred();
-        np.resolve(another);
+      return new welsh.Promise(function (resolveOuter) {
         setTimeout(function () {
-          another.resolve('***' + result + '***');
+          resolveOuter(new welsh.Deferred(function (resolveInner) {
+            setTimeout(function () {
+              resolveInner('***' + result + '***');
+            }, 100);
+          }));
         }, 100);
-      }, 100);
-      return np;
+      });
     }).then(function (result) {
       expect(result).to.equal('***"---hello bill---"***');
       return '///' + result + '\\\\\\';
@@ -38,23 +38,26 @@ describe("Welsh Interop", function () {
   });
 
   it("should handle returned Deferreds that reject", function (done) {
-    var p = new welsh.Promise();
+    var reject;
+    var p = new welsh.Promise(function (_resolve, _reject) {
+      reject = _reject;
+    });
 
     p.catch(function (err) {
       expect(err).to.equal("an error!");
       throw 'totally ' + err;
     }).catch(function (result) {
       expect(result).to.equal('totally an error!');
-      var np = new welsh.Deferred();
-      setTimeout(function () {
-        np.reject('it was ' + result);
-      }, 100);
-      return np;
+      return new welsh.Deferred(function (resolve, reject) {
+        setTimeout(function () {
+          reject('it was ' + result);
+        }, 100);
+      });
     }).catch(function (err) {
       expect(err).to.equal("it was totally an error!");
       done();
     });
 
-    p.reject("an error!");
+    reject("an error!");
   });
 });

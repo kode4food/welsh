@@ -7,7 +7,8 @@ var welsh = require('../lib');
 
 describe("Welsh Conversions", function () {
   it("should allow a Promise to produce a Deferred", function (done) {
-    var p = new welsh.Promise();
+    var resolve;
+    var p = new welsh.Promise(function (_resolve) { resolve = _resolve; });
     var d = p.toDeferred();
     var e = d.then(function (result) {
       expect(result).to.equal('hello');
@@ -16,11 +17,12 @@ describe("Welsh Conversions", function () {
 
     expect(d).to.not.equal(p);
     expect(d).to.equal(e);
-    p.resolve('hello');
+    resolve('hello');
   });
 
   it("should allow a Deferred to produce a Promise", function (done) {
-    var d = new welsh.Deferred();
+    var reject;
+    var d = new welsh.Deferred(function (_resolve, _reject) { reject = _reject; });
     var p = d.toPromise();
     p.then(undefined, function (reason) {
       expect(reason).to.equal('not transformed');
@@ -32,6 +34,6 @@ describe("Welsh Conversions", function () {
     }).then(function (result) {
       expect(result).to.equal('transformed');
     });
-    d.reject('not transformed');
+    reject('not transformed');
   });
 });
