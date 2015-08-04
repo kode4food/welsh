@@ -1,0 +1,12 @@
+{
+  "compilerOptions": {
+    "target": "es5",
+    "module": "commonjs",
+    "removeComments": true,
+    "out": "dist/welsh-node.js",
+    "sourceMap": false
+  },
+  "files": [
+    "index.ts"
+  ]
+}

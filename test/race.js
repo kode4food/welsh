@@ -3,7 +3,7 @@
 "use strict";
 
 var expect = require('chai').expect;
-var welsh = require('../lib');
+var welsh = require('../dist/welsh-node');
 
 describe("Welsh 'race()' Implementation", function () {
   it("should probably work", function (done) {

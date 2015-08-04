@@ -5,10 +5,10 @@ var path = require('path');
 
 var gulp = require('gulp');
 var jshint = require('gulp-jshint');
+var typescript = require('gulp-typescript');
 var mocha = require('gulp-mocha');
 var istanbul = require('gulp-istanbul');
 var enforcer = require('gulp-istanbul-enforcer');
-var plato = require('plato');
 
 var source = require('vinyl-source-stream');
 var inject = require('gulp-inject-string');
@@ -18,13 +18,12 @@ var browserify = require('browserify');
 
 var pkg = require('./package.json');
 
-var reportDir = './report';
-var ignoreFiles = [
-  '!dist/**/*', '!coverage/**/*', '!report/**/*', '!node_modules/**/*'
-];
-var sourceFiles = ['**/*.js'].concat(ignoreFiles);
-var reportFiles = ['*.js', 'lib/**/*.js', 'test/**/*.js'];
-var testFiles = ['test/*.js'];
+var distDir = './dist';
+var testDir = './test';
+
+var generatedFile = [distDir + '/welsh-node.js'];
+var testFiles = [testDir + '/*.js'];
+var sourceFiles = generatedFile.concat(testFiles);
 
 var browserSourceFile = "./browserify.js";
 var browserTargetDir = "./dist/";
@@ -35,19 +34,13 @@ var preamble = [
   "(c)", new Date().getFullYear(), pkg.author, "*/\n"
 ].join(' ');
 
+var tsProject = typescript.createProject('tsconfig.json');
+
 var mochaConfig = {
 };
 
-var platoConfig = {
-  title: "Complexity: " + pkg.name,
-  jshint: {
-    options: JSON.parse(fs.readFileSync('./.jshintrc').toString())
-  },
-  recurse: true
-};
-
 var browserifyConfig = {
-  detectGlobals: false  
+  detectGlobals: false
 };
 
 var minifyConfig = {
@@ -69,18 +62,11 @@ function createUnitTests() {
   return gulp.src(testFiles).pipe(mocha(mochaConfig));
 }
 
-gulp.task('lint', function (done) {
-  gulp.src(sourceFiles)
-      .pipe(jshint())
-      .pipe(jshint.reporter('default'))
-      .on('end', done);
-});
-
-gulp.task('test', function (done) {
+gulp.task('test', ['compile'], function (done) {
   createUnitTests().on('end', done);
 });
 
-gulp.task('coverage', function (done) {
+gulp.task('coverage', ['compile'], function (done) {
   gulp.src(sourceFiles)
       .pipe(istanbul())
       .pipe(istanbul.hookRequire())
@@ -89,19 +75,18 @@ gulp.task('coverage', function (done) {
       });
 });
 
-gulp.task('enforce', ['lint', 'coverage'], function (done) {
+gulp.task('enforce', ['coverage'], function (done) {
   gulp.src('.')
       .pipe(enforcer(enforcerConfig))
       .on('end', done);
 });
 
-gulp.task('complexity', function (done) {
-  plato.inspect(reportFiles, reportDir, platoConfig, function () {
-    done();
-  });
+gulp.task('compile', function() {
+  var tsResult = tsProject.src().pipe(typescript(tsProject));
+  return tsResult.js.pipe(gulp.dest('.'));
 });
 
-gulp.task('browserify', function (done) {
+gulp.task('browserify', ['compile'], function (done) {
   browserify(browserSourceFile, browserifyConfig)
     .bundle()
     .pipe(source(browserTargetFile))
@@ -118,5 +103,5 @@ gulp.task('minify', ['browserify'], function (done) {
       .on('end', done);
 });
 
-gulp.task('build', ['enforce', 'complexity', 'minify']);
+gulp.task('build', ['enforce', 'minify']);
 gulp.task('default', ['build']);

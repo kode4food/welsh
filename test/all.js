@@ -3,7 +3,7 @@
 "use strict";
 
 var expect = require('chai').expect;
-var welsh = require('../lib');
+var welsh = require('../dist/welsh-node');
 
 describe("Welsh 'all()' Implementation", function () {
   it("should support args with promises and deferreds", function (done) {
