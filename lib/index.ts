@@ -1,4 +1,3 @@
-/// <reference path="../typings/node/node.d.ts"/>
 /// <reference path="./Promise.ts"/>
 /// <reference path="./Deferred.ts"/>
 /// <reference path="./Constructor.ts"/>

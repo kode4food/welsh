@@ -1,4 +1,3 @@
-/// <reference path="../typings/node/node.d.ts"/>
 /// <reference path="./Helpers.ts"/>
 /// <reference path="./WelshBase.ts"/>
 /// <reference path="./Queue.ts"/>
@@ -21,7 +20,7 @@ module Welsh {
   var rejectedState = 2;
 
   export class Promise extends WelshBase {
-    constructor(executor: Executor) {
+    constructor(executor) {
       super();
 
       var state, settledResult, branched, pendingHandlers;

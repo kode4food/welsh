@@ -1,5 +1,3 @@
-/// <reference path="../typings/node/node.d.ts"/>
-
 /*
  * Welsh (Promises, but not really)
  * Licensed under the MIT License
