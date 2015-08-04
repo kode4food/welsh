@@ -72,7 +72,7 @@ return new welsh.Deferred(function (resolve, reject) {
 In short, use a Deferred if you want to build a fast, isolated, and synchronous dispatch chain that still honors asynchronous 'Thenable' results.  Use a Promise when you need to create multiple branches of intermediate results or you need to pass the Promise into code that you don't control.
 
 ## The Welsh API
-Two (nearly) identical interfaces are exposed.  They are the `Promise` and the `Deferred` constructors.  They are used to create a Promise or a Deferred, respectively.  Each constructor accepts an optional executor callback that is invoked synchronously and can be used to resolve or reject the promise or deferred that invoked it.
+Two identical interfaces are exposed.  They are the `Promise` and the `Deferred` constructors.  They are used to create a Promise or a Deferred, respectively.  Each constructor accepts a required executor callback that is invoked synchronously and can be used to resolve or reject the promise or deferred that invoked it.
 
 ```javascript
 var welsh = require('welsh');
