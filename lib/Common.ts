@@ -36,7 +36,7 @@ namespace Welsh {
       // no-op
     }
 
-    then(onFulfilled, onRejected): Common {
+    then(onFulfilled?: Resolver, onRejected?: Rejecter): Common {
       throw new Error("Not implemented");
     }
 
