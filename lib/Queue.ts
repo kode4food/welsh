@@ -12,28 +12,28 @@ namespace Welsh.Queue {
   var queue = [];
 
   var nextTick = (function () {
-    if (typeof setImmediate === 'function') {
+    if ( typeof setImmediate === 'function' ) {
       return setImmediate;
     }
-    if (typeof window === 'object' &&
-      typeof window.requestAnimationFrame === 'function') {
+    if ( typeof window === 'object' &&
+      typeof window.requestAnimationFrame === 'function' ) {
       return window.requestAnimationFrame;
     }
-    if (typeof setTimeout === 'function') {
+    if ( typeof setTimeout === 'function' ) {
       return setTimeout;
     }
     throw new Error("And I should schedule Promises how?");
   }());
 
-  export function queueCall(callback) {
-    if (!queue.length) {
+  export function queueCall(callback: Function) {
+    if ( !queue.length ) {
       nextTick(performCalls);
     }
     queue[queue.length] = callback;
   }
 
   function performCalls() {
-    for (var i = 0; i < queue.length; i++) {
+    for ( var i = 0; i < queue.length; i++ ) {
       queue[i]();
     }
     queue = [];

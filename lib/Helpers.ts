@@ -10,7 +10,7 @@
 
 namespace Welsh.Helpers {
   var bindThis = (function () {
-    if (Function.prototype.bind) {
+    if ( Function.prototype.bind ) {
       return function (func, thisVal) {
         return func.bind(thisVal);
       };
@@ -23,30 +23,30 @@ namespace Welsh.Helpers {
     };
   }());
 
-  export function getThenFunction(value) {
-    if (!value) {
+  export function getThenFunction(value?: any) {
+    if ( !value ) {
       return null;
     }
     var valueType = typeof value;
-    if (valueType !== 'object' && valueType !== 'function') {
+    if ( valueType !== 'object' && valueType !== 'function' ) {
       return null;
     }
     var then = value.then;
-    if (typeof then !== 'function') {
+    if ( typeof then !== 'function' ) {
       return null;
     }
     return bindThis(then, value);
   }
 
-  export function tryCatch(tryBlock:Function, catchBlock?:Function) {
-    if (typeof tryBlock !== 'function') {
+  export function tryCatch(tryBlock: Function, catchBlock?: Function) {
+    if ( typeof tryBlock !== 'function' ) {
       return;
     }
     try {
       return tryBlock();
     }
-    catch (err) {
-      if (typeof catchBlock === 'function') {
+    catch ( err ) {
+      if ( typeof catchBlock === 'function' ) {
         return catchBlock(err);
       }
     }

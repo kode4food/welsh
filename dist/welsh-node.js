@@ -54,22 +54,19 @@ var Welsh;
     })(Helpers = Welsh.Helpers || (Welsh.Helpers = {}));
 })(Welsh || (Welsh = {}));
 /// <reference path="./Helpers.ts"/>
-/*
- * Welsh (Promises, but not really)
- * Licensed under the MIT License
- * see LICENSE.md
- *
- * @author Thomas S. Bradford (kode4food.it)
- */
 "use strict";
 var Welsh;
 (function (Welsh) {
     var tryCatch = Welsh.Helpers.tryCatch;
     var getThenFunction = Welsh.Helpers.getThenFunction;
     var slice = Array.prototype.slice;
+    (function (State) {
+        State[State["fulfilledState"] = 1] = "fulfilledState";
+        State[State["rejectedState"] = 2] = "rejectedState";
+    })(Welsh.State || (Welsh.State = {}));
+    var State = Welsh.State;
     var Common = (function () {
         function Common(executor) {
-            // no-op
         }
         Common.prototype.then = function (onFulfilled, onRejected) {
             throw new Error("Not implemented");
@@ -276,13 +273,6 @@ var Welsh;
 /// <reference path="./Helpers.ts"/>
 /// <reference path="./Common.ts"/>
 /// <reference path="./Queue.ts"/>
-/*
- * Welsh (Promises, but not really)
- * Licensed under the MIT License
- * see LICENSE.md
- *
- * @author Thomas S. Bradford (kode4food.it)
- */
 "use strict";
 var __extends = (this && this.__extends) || function (d, b) {
     for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p];
@@ -294,13 +284,14 @@ var Welsh;
 (function (Welsh) {
     var getThenFunction = Welsh.Helpers.getThenFunction;
     var queueCall = Welsh.Queue.queueCall;
-    var fulfilledState = 1;
-    var rejectedState = 2;
     var Promise = (function (_super) {
         __extends(Promise, _super);
         function Promise(executor) {
             _super.call(this, executor);
-            var state, settledResult, branched, pendingHandlers;
+            var state;
+            var settledResult;
+            var branched;
+            var pendingHandlers;
             var self = this;
             this.then = createThen;
             if (typeof executor !== 'function') {
@@ -322,7 +313,7 @@ var Welsh;
                         doResolve(then);
                         return;
                     }
-                    state = fulfilledState;
+                    state = Welsh.State.fulfilledState;
                     settledResult = result;
                     queueCall(notifyPending);
                 }
@@ -334,7 +325,7 @@ var Welsh;
                 if (state) {
                     return;
                 }
-                state = rejectedState;
+                state = Welsh.State.rejectedState;
                 settledResult = reason;
                 queueCall(notifyPending);
             }
@@ -398,7 +389,13 @@ var Welsh;
             }
             function addPending(onFulfilled, onRejected) {
                 if (state) {
-                    var callback = state === fulfilledState ? onFulfilled : onRejected;
+                    var callback;
+                    if (state === Welsh.State.fulfilledState) {
+                        callback = onFulfilled;
+                    }
+                    else {
+                        callback = onRejected;
+                    }
                     queueCall(function () {
                         callback(settledResult);
                     });
@@ -438,25 +435,18 @@ var Welsh;
 })(Welsh || (Welsh = {}));
 /// <reference path="./Helpers.ts"/>
 /// <reference path="./Common.ts"/>
-/*
- * Welsh (Promises, but not really)
- * Licensed under the MIT License
- * see LICENSE.md
- *
- * @author Thomas S. Bradford (kode4food.it)
- */
 "use strict";
 var Welsh;
 (function (Welsh) {
     var getThenFunction = Welsh.Helpers.getThenFunction;
-    var fulfilledState = 1;
-    var rejectedState = 2;
     var Deferred = (function (_super) {
         __extends(Deferred, _super);
         function Deferred(executor) {
             _super.call(this, executor);
             var self = this;
-            var state, running, pendingResult;
+            var state;
+            var running;
+            var pendingResult;
             var pendingHandlers = [];
             var pendingIndex = 0;
             this.then = appendThen;
@@ -471,10 +461,10 @@ var Welsh;
                 reject(err);
             }
             function resolve(result) {
-                start(fulfilledState, result);
+                start(Welsh.State.fulfilledState, result);
             }
             function reject(reason) {
-                start(rejectedState, reason);
+                start(Welsh.State.rejectedState, reason);
             }
             function start(newState, result) {
                 if (state) {
@@ -507,11 +497,11 @@ var Welsh;
                     if (typeof callback === 'function') {
                         try {
                             result = callback(result);
-                            state = fulfilledState;
+                            state = Welsh.State.fulfilledState;
                         }
                         catch (reason) {
                             result = reason;
-                            state = rejectedState;
+                            state = Welsh.State.rejectedState;
                         }
                     }
                 } while (true);
@@ -521,12 +511,12 @@ var Welsh;
                 running = false;
             }
             function fulfilledLinker(result) {
-                state = fulfilledState;
+                state = Welsh.State.fulfilledState;
                 proceed(result);
                 return result;
             }
             function rejectedLinker(reason) {
-                state = rejectedState;
+                state = Welsh.State.rejectedState;
                 proceed(reason);
                 throw reason;
             }
@@ -537,13 +527,6 @@ var Welsh;
 })(Welsh || (Welsh = {}));
 /// <reference path="./Promise.ts"/>
 /// <reference path="./Deferred.ts"/>
-/*
- * Welsh (Promises, but not really)
- * Licensed under the MIT License
- * see LICENSE.md
- *
- * @author Thomas S. Bradford (kode4food.it)
- */
 "use strict";
 /// <reference path="./typings/node/node.d.ts"/>
 /// <reference path="./lib/index"/>

@@ -22,6 +22,11 @@ namespace Welsh {
 
   var slice = Array.prototype.slice;
 
+  export enum State {
+    fulfilledState = 1,
+    rejectedState = 2
+  }
+
   export interface Thenable {
     then(onFulfilled?: Resolver, onRejected?: Rejecter): Thenable;
   }
@@ -95,39 +100,39 @@ namespace Welsh {
       });
     }
 
-    static race(... thenables: Thenable[]): Common {
+    static race(...thenables: Thenable[]): Common {
       return new this(function (resolve, reject) {
         try {
-          for (var i = 0, len = thenables.length; i < len; i++) {
+          for ( var i = 0, len = thenables.length; i < len; i++ ) {
             var value = thenables[i];
             var then = getThenFunction(value);
-            if (then) {
+            if ( then ) {
               then(resolve, reject);
               continue;
             }
             resolve(value);
           }
         }
-        catch (err) {
+        catch ( err ) {
           reject(err);
         }
       });
     }
 
-    static all(... thenables: Thenable[]): Common {
+    static all(...thenables: Thenable[]): Common {
       return new this(function (resolve, reject) {
         var waitingFor = thenables.length;
 
-        for (var i = 0, len = waitingFor; i < len; i++) {
+        for ( var i = 0, len = waitingFor; i < len; i++ ) {
           var then = getThenFunction(thenables[i]);
-          if (then) {
+          if ( then ) {
             resolveThenAtIndex(then, i);
             continue;
           }
           waitingFor--;
         }
 
-        if (!waitingFor) {
+        if ( !waitingFor ) {
           resolve(thenables);
         }
 
@@ -136,7 +141,7 @@ namespace Welsh {
 
           function wrappedResolve(result) {
             thenables[index] = result;
-            if (!--waitingFor) {
+            if ( !--waitingFor ) {
               resolve(thenables);
             }
             return result;
@@ -161,7 +166,7 @@ namespace Welsh {
           nodeFunction.apply(null, args);
 
           function callback(err) {
-            if (err) {
+            if ( err ) {
               reject(err);
               return;
             }
@@ -181,7 +186,7 @@ namespace Welsh {
 
       var originalThen = getThenFunction(deferred);
       deferred.then = function (onFulfilled, onRejected) {
-        if (!called) {
+        if ( !called ) {
           deferred.then = originalThen;
           called = true;
           executor(resolve, reject);

@@ -16,78 +16,78 @@ namespace Welsh {
   import getThenFunction = Helpers.getThenFunction;
   import queueCall = Queue.queueCall;
 
-  var fulfilledState = 1;
-  var rejectedState = 2;
-
   export class Promise extends Common {
-    constructor(executor) {
+    constructor(executor: Executor) {
       super(executor);
 
-      var state, settledResult, branched, pendingHandlers;
+      var state: State;
+      var settledResult: any;
+      var branched: boolean;
+      var pendingHandlers: any;
       var self = this;
 
       this.then = createThen;
 
-      if (typeof executor !== 'function') {
+      if ( typeof executor !== 'function' ) {
         reject(new Error("Promise requires an Executor Function"));
         return;
       }
       doResolve(executor);
 
-      function resolve(result) {
-        if (state) {
+      function resolve(result?: any) {
+        if ( state ) {
           return;
         }
-        if (self === result) {
+        if ( self === result ) {
           reject(new TypeError("Um, yeah, a Promise can't resolve itself"));
           return;
         }
         try {
           var then = getThenFunction(result);
-          if (then) {
+          if ( then ) {
             doResolve(then);
             return;
           }
-          state = fulfilledState;
+          state = State.fulfilledState;
           settledResult = result;
           queueCall(notifyPending);
         }
-        catch (err) {
+        catch ( err ) {
           reject(err);
         }
       }
 
-      function reject(reason) {
-        if (state) {
+      function reject(reason?: any) {
+        if ( state ) {
           return;
         }
-        state = rejectedState;
+        state = State.rejectedState;
         settledResult = reason;
         queueCall(notifyPending);
       }
 
-      function doResolve(executor) {
+      function doResolve(executor: Executor) {
         var done;
         try {
           executor(wrappedResolve, wrappedReject);
         }
-        catch (err) {
-          if (done) {
+        catch ( err ) {
+          if ( done ) {
             return;
           }
           reject(err);
         }
 
-        function wrappedResolve(result) {
-          if (done) {
+        function wrappedResolve(result?: any) {
+          if ( done ) {
             return;
           }
           done = true;
           resolve(result);
         }
 
-        function wrappedReject(reason) {
-          if (done) {
+        function wrappedReject(reason?: any) {
+          if ( done ) {
             return;
           }
           done = true;
@@ -95,7 +95,7 @@ namespace Welsh {
         }
       }
 
-      function createThen(onFulfilled, onRejected) {
+      function createThen(onFulfilled?: Resolver, onRejected?: Rejecter) {
         var resolve, reject;
         addPending(fulfilledHandler, rejectedHandler);
         return new Promise(function (_resolve, _reject) {
@@ -103,36 +103,43 @@ namespace Welsh {
           reject = _reject;
         });
 
-        function fulfilledHandler(result) {
-          if (typeof onFulfilled !== 'function') {
+        function fulfilledHandler(result?: any) {
+          if ( typeof onFulfilled !== 'function' ) {
             resolve(result);
             return;
           }
           try {
             resolve(onFulfilled(result));
           }
-          catch (err) {
+          catch ( err ) {
             reject(err);
           }
         }
 
-        function rejectedHandler(reason) {
-          if (typeof onRejected !== 'function') {
+        function rejectedHandler(reason?: any) {
+          if ( typeof onRejected !== 'function' ) {
             reject(reason);
             return;
           }
           try {
             resolve(onRejected(reason));
           }
-          catch (err) {
+          catch ( err ) {
             reject(err);
           }
         }
       }
 
-      function addPending(onFulfilled, onRejected) {
-        if (state) {
-          var callback = state === fulfilledState ? onFulfilled : onRejected;
+      function addPending(onFulfilled?: Resolver, onRejected?: Rejecter) {
+        if ( state ) {
+          var callback;
+          if ( state === State.fulfilledState ) {
+            callback = onFulfilled;
+          }
+          else {
+            callback = onRejected;
+          }
+
           queueCall(function () {
             callback(settledResult);
           });
@@ -140,12 +147,12 @@ namespace Welsh {
         }
 
         var item = [undefined, onFulfilled, onRejected];
-        if (!pendingHandlers) {
+        if ( !pendingHandlers ) {
           pendingHandlers = item;
           return;
         }
 
-        if (!branched) {
+        if ( !branched ) {
           pendingHandlers = [pendingHandlers, item];
           branched = true;
           return;
@@ -155,11 +162,11 @@ namespace Welsh {
       }
 
       function notifyPending() {
-        if (!pendingHandlers) {
+        if ( !pendingHandlers ) {
           return;
         }
-        if (branched) {
-          for (var i = 0, len = pendingHandlers.length; i < len; i++) {
+        if ( branched ) {
+          for ( var i = 0, len = pendingHandlers.length; i < len; i++ ) {
             pendingHandlers[i][state](settledResult);
           }
         }
