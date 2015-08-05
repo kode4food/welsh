@@ -40,11 +40,11 @@ namespace Welsh {
         reject(err);
       }
 
-      function resolve(result?: any) {
+      function resolve(result) {
         start(State.fulfilledState, result);
       }
 
-      function reject(reason?: any) {
+      function reject(reason) {
         start(State.rejectedState, reason);
       }
 
@@ -99,13 +99,13 @@ namespace Welsh {
         running = false;
       }
 
-      function fulfilledLinker(result?: any) {
+      function fulfilledLinker(result) {
         state = State.fulfilledState;
         proceed(result);
         return result;
       }
 
-      function rejectedLinker(reason?: any) {
+      function rejectedLinker(reason) {
         state = State.rejectedState;
         proceed(reason);
         throw reason;

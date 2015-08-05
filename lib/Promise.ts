@@ -34,7 +34,7 @@ namespace Welsh {
       }
       doResolve(executor);
 
-      function resolve(result?: any) {
+      function resolve(result) {
         if ( state ) {
           return;
         }
@@ -57,7 +57,7 @@ namespace Welsh {
         }
       }
 
-      function reject(reason?: any) {
+      function reject(reason) {
         if ( state ) {
           return;
         }
@@ -78,7 +78,7 @@ namespace Welsh {
           reject(err);
         }
 
-        function wrappedResolve(result?: any) {
+        function wrappedResolve(result) {
           if ( done ) {
             return;
           }
@@ -86,7 +86,7 @@ namespace Welsh {
           resolve(result);
         }
 
-        function wrappedReject(reason?: any) {
+        function wrappedReject(reason) {
           if ( done ) {
             return;
           }
@@ -103,7 +103,7 @@ namespace Welsh {
           reject = _reject;
         });
 
-        function fulfilledHandler(result?: any) {
+        function fulfilledHandler(result) {
           if ( typeof onFulfilled !== 'function' ) {
             resolve(result);
             return;
@@ -116,7 +116,7 @@ namespace Welsh {
           }
         }
 
-        function rejectedHandler(reason?: any) {
+        function rejectedHandler(reason) {
           if ( typeof onRejected !== 'function' ) {
             reject(reason);
             return;
