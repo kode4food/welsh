@@ -16,6 +16,7 @@ var browserify = require('browserify');
 var pkg = require('./package.json');
 
 var testDir = './test';
+var tsFiles = ['index.ts', 'lib/**/*.ts'];
 var testFiles = [testDir + '/*.js'];
 var browserSourceFile = "./browserify.js";
 var browserTargetDir = "./dist/";
@@ -63,6 +64,10 @@ gulp.task('minify', ['browserify'], function (done) {
       .pipe(rename({ suffix: '.min' }))
       .pipe(gulp.dest(browserTargetDir))
       .on('end', done);
+});
+
+gulp.task('watch', ['compile'], function () {
+  gulp.watch(tsFiles, ['compile']);
 });
 
 gulp.task('build', ['minify']);

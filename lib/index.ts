@@ -12,5 +12,4 @@
 "use strict";
 
 namespace Welsh {
-
 }
