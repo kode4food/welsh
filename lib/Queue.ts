@@ -11,7 +11,6 @@
 namespace Welsh.Queue {
   var queue = [];
 
-  /* istanbul ignore next */
   var nextTick = (function () {
     if (typeof setImmediate === 'function') {
       return setImmediate;

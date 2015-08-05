@@ -1,6 +1,5 @@
 /// <reference path="./Promise.ts"/>
 /// <reference path="./Deferred.ts"/>
-/// <reference path="./Constructor.ts"/>
 
 /*
  * Welsh (Promises, but not really)
@@ -13,7 +12,5 @@
 "use strict";
 
 namespace Welsh {
-  // Decorate the Deferred Constructors
-  Constructor.decorateConstructor(Promise);
-  Constructor.decorateConstructor(Deferred);
+
 }

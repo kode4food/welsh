@@ -10,16 +10,6 @@ var Welsh;
 (function (Welsh) {
     var Helpers;
     (function (Helpers) {
-        var slice = Array.prototype.slice;
-        var isArray = (function () {
-            if (Array.isArray) {
-                return Array.isArray;
-            }
-            var toString = Object.prototype.toString;
-            return function _isArray(obj) {
-                return obj && toString.call(obj) === '[object Array]';
-            };
-        }());
         var bindThis = (function () {
             if (Function.prototype.bind) {
                 return function (func, thisVal) {
@@ -61,33 +51,33 @@ var Welsh;
             }
         }
         Helpers.tryCatch = tryCatch;
-        function extractArrayArguments() {
-            if (arguments.length === 1 && isArray(arguments[0])) {
-                return slice.call(arguments[0]);
-            }
-            else {
-                return slice.call(arguments);
-            }
-        }
-        Helpers.extractArrayArguments = extractArrayArguments;
     })(Helpers = Welsh.Helpers || (Welsh.Helpers = {}));
 })(Welsh || (Welsh = {}));
 /// <reference path="./Helpers.ts"/>
+/*
+ * Welsh (Promises, but not really)
+ * Licensed under the MIT License
+ * see LICENSE.md
+ *
+ * @author Thomas S. Bradford (kode4food.it)
+ */
 "use strict";
 var Welsh;
 (function (Welsh) {
     var tryCatch = Welsh.Helpers.tryCatch;
     var getThenFunction = Welsh.Helpers.getThenFunction;
-    var WelshBase = (function () {
-        function WelshBase() {
+    var slice = Array.prototype.slice;
+    var Common = (function () {
+        function Common(executor) {
+            // no-op
         }
-        WelshBase.prototype.then = function (onFulfilled, onRejected) {
+        Common.prototype.then = function (onFulfilled, onRejected) {
             throw new Error("Not implemented");
         };
-        WelshBase.prototype.catch = function (onRejected) {
+        Common.prototype.catch = function (onRejected) {
             return this.then(undefined, onRejected);
         };
-        WelshBase.prototype.finally = function (onFinally) {
+        Common.prototype.finally = function (onFinally) {
             return this.then(wrappedFulfilled, wrappedRejected);
             function wrappedFulfilled(result) {
                 tryCatch(onFinally);
@@ -98,7 +88,7 @@ var Welsh;
                 throw reason;
             }
         };
-        WelshBase.prototype.toNode = function (callback) {
+        Common.prototype.toNode = function (callback) {
             return this.then(wrappedFulfilled, wrappedRejected);
             function wrappedFulfilled(result) {
                 try {
@@ -117,15 +107,116 @@ var Welsh;
                 }
             }
         };
-        WelshBase.prototype.toPromise = function () {
+        Common.prototype.toPromise = function () {
             return convertUsing(this, Welsh.Promise);
         };
-        WelshBase.prototype.toDeferred = function () {
+        Common.prototype.toDeferred = function () {
             return convertUsing(this, Welsh.Deferred);
         };
-        return WelshBase;
+        Common.resolve = function (result) {
+            return new this(function (resolve) {
+                resolve(result);
+            });
+        };
+        Common.reject = function (reason) {
+            return new this(function (resolve, reject) {
+                reject(reason);
+            });
+        };
+        Common.race = function () {
+            var thenables = [];
+            for (var _i = 0; _i < arguments.length; _i++) {
+                thenables[_i - 0] = arguments[_i];
+            }
+            return new this(function (resolve, reject) {
+                try {
+                    for (var i = 0, len = thenables.length; i < len; i++) {
+                        var value = thenables[i];
+                        var then = getThenFunction(value);
+                        if (then) {
+                            then(resolve, reject);
+                            continue;
+                        }
+                        resolve(value);
+                    }
+                }
+                catch (err) {
+                    reject(err);
+                }
+            });
+        };
+        Common.all = function () {
+            var thenables = [];
+            for (var _i = 0; _i < arguments.length; _i++) {
+                thenables[_i - 0] = arguments[_i];
+            }
+            return new this(function (resolve, reject) {
+                var waitingFor = thenables.length;
+                for (var i = 0, len = waitingFor; i < len; i++) {
+                    var then = getThenFunction(thenables[i]);
+                    if (then) {
+                        resolveThenAtIndex(then, i);
+                        continue;
+                    }
+                    waitingFor--;
+                }
+                if (!waitingFor) {
+                    resolve(thenables);
+                }
+                function resolveThenAtIndex(then, index) {
+                    then(wrappedResolve, wrappedReject);
+                    function wrappedResolve(result) {
+                        thenables[index] = result;
+                        if (!--waitingFor) {
+                            resolve(thenables);
+                        }
+                        return result;
+                    }
+                    function wrappedReject(reason) {
+                        reject(reason);
+                        throw reason;
+                    }
+                }
+            });
+        };
+        Common.fromNode = function (nodeFunction) {
+            var Constructor = this;
+            return nodeWrapper;
+            function nodeWrapper() {
+                var wrapperArguments = arguments;
+                return new Constructor(function (resolve, reject) {
+                    var args = slice.call(wrapperArguments).concat(callback);
+                    nodeFunction.apply(null, args);
+                    function callback(err) {
+                        if (err) {
+                            reject(err);
+                            return;
+                        }
+                        resolve(slice.call(arguments, 1));
+                    }
+                });
+            }
+        };
+        Common.lazy = function (executor) {
+            var resolve, reject, called;
+            var deferred = new this(function (_resolve, _reject) {
+                resolve = _resolve;
+                reject = _reject;
+            });
+            var originalThen = getThenFunction(deferred);
+            deferred.then = function (onFulfilled, onRejected) {
+                if (!called) {
+                    deferred.then = originalThen;
+                    called = true;
+                    executor(resolve, reject);
+                }
+                return originalThen(onFulfilled, onRejected);
+            };
+            return deferred;
+        };
+        return Common;
     })();
-    Welsh.WelshBase = WelshBase;
+    Welsh.Common = Common;
     function convertUsing(deferred, Constructor) {
         return new Constructor(function (resolve, reject) {
             var then = getThenFunction(deferred);
@@ -183,8 +274,15 @@ var Welsh;
     })(Queue = Welsh.Queue || (Welsh.Queue = {}));
 })(Welsh || (Welsh = {}));
 /// <reference path="./Helpers.ts"/>
-/// <reference path="./WelshBase.ts"/>
+/// <reference path="./Common.ts"/>
 /// <reference path="./Queue.ts"/>
+/*
+ * Welsh (Promises, but not really)
+ * Licensed under the MIT License
+ * see LICENSE.md
+ *
+ * @author Thomas S. Bradford (kode4food.it)
+ */
 "use strict";
 var __extends = (this && this.__extends) || function (d, b) {
     for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p];
@@ -201,7 +299,7 @@ var Welsh;
     var Promise = (function (_super) {
         __extends(Promise, _super);
         function Promise(executor) {
-            _super.call(this);
+            _super.call(this, executor);
             var state, settledResult, branched, pendingHandlers;
             var self = this;
             this.then = createThen;
@@ -300,8 +398,9 @@ var Welsh;
             }
             function addPending(onFulfilled, onRejected) {
                 if (state) {
+                    var callback = state === fulfilledState ? onFulfilled : onRejected;
                     queueCall(function () {
-                        (state === fulfilledState ? onFulfilled : onRejected)(settledResult);
+                        callback(settledResult);
                     });
                     return;
                 }
@@ -334,11 +433,18 @@ var Welsh;
             }
         }
         return Promise;
-    })(Welsh.WelshBase);
+    })(Welsh.Common);
     Welsh.Promise = Promise;
 })(Welsh || (Welsh = {}));
 /// <reference path="./Helpers.ts"/>
-/// <reference path="./WelshBase.ts"/>
+/// <reference path="./Common.ts"/>
+/*
+ * Welsh (Promises, but not really)
+ * Licensed under the MIT License
+ * see LICENSE.md
+ *
+ * @author Thomas S. Bradford (kode4food.it)
+ */
 "use strict";
 var Welsh;
 (function (Welsh) {
@@ -348,7 +454,7 @@ var Welsh;
     var Deferred = (function (_super) {
         __extends(Deferred, _super);
         function Deferred(executor) {
-            _super.call(this);
+            _super.call(this, executor);
             var self = this;
             var state, running, pendingResult;
             var pendingHandlers = [];
@@ -426,9 +532,11 @@ var Welsh;
             }
         }
         return Deferred;
-    })(Welsh.WelshBase);
+    })(Welsh.Common);
     Welsh.Deferred = Deferred;
 })(Welsh || (Welsh = {}));
+/// <reference path="./Promise.ts"/>
+/// <reference path="./Deferred.ts"/>
 /*
  * Welsh (Promises, but not really)
  * Licensed under the MIT License
@@ -437,127 +545,6 @@ var Welsh;
  * @author Thomas S. Bradford (kode4food.it)
  */
 "use strict";
-var Welsh;
-(function (Welsh) {
-    var Constructor;
-    (function (Constructor_1) {
-        var getThenFunction = Welsh.Helpers.getThenFunction;
-        var extractArrayArguments = Welsh.Helpers.extractArrayArguments;
-        var slice = Array.prototype.slice;
-        function decorateConstructor(Constructor) {
-            Constructor.resolve = createResolve;
-            Constructor.reject = createReject;
-            Constructor.race = createRace;
-            Constructor.all = createAll;
-            Constructor.fromNode = createFromNode;
-            Constructor.lazy = createLazy;
-            return Constructor;
-            function createResolve(result) {
-                return new Constructor(function (resolve) {
-                    resolve(result);
-                });
-            }
-            function createReject(reason) {
-                return new Constructor(function (resolve, reject) {
-                    reject(reason);
-                });
-            }
-            function createRace() {
-                var args = extractArrayArguments.apply(null, arguments);
-                return new Constructor(function (resolve, reject) {
-                    try {
-                        for (var i = 0, len = args.length; i < len; i++) {
-                            var value = args[i];
-                            var then = getThenFunction(value);
-                            if (then) {
-                                then(resolve, reject);
-                                continue;
-                            }
-                            resolve(value);
-                        }
-                    }
-                    catch (err) {
-                        reject(err);
-                    }
-                });
-            }
-            function createAll() {
-                var args = extractArrayArguments.apply(null, arguments);
-                return new Constructor(function (resolve, reject) {
-                    var waitingFor = args.length;
-                    for (var i = 0, len = waitingFor; i < len; i++) {
-                        var then = getThenFunction(args[i]);
-                        if (then) {
-                            resolveThenAtIndex(then, i);
-                            continue;
-                        }
-                        waitingFor--;
-                    }
-                    if (!waitingFor) {
-                        resolve(args);
-                    }
-                    function resolveThenAtIndex(then, index) {
-                        then(wrappedResolve, wrappedReject);
-                        function wrappedResolve(result) {
-                            args[index] = result;
-                            if (!--waitingFor) {
-                                resolve(args);
-                            }
-                            return result;
-                        }
-                        function wrappedReject(reason) {
-                            reject(reason);
-                            throw reason;
-                        }
-                    }
-                });
-            }
-            function createFromNode(nodeFunction) {
-                return nodeWrapper;
-                function nodeWrapper() {
-                    var wrapperArguments = arguments;
-                    return new Constructor(function (resolve, reject) {
-                        nodeFunction.apply(null, slice.call(wrapperArguments).concat(callback));
-                        function callback(err) {
-                            if (err) {
-                                reject(err);
-                                return;
-                            }
-                            resolve(slice.call(arguments, 1));
-                        }
-                    });
-                }
-            }
-            function createLazy(executor) {
-                var resolve, reject, called;
-                var deferred = new Constructor(function (_resolve, _reject) {
-                    resolve = _resolve;
-                    reject = _reject;
-                });
-                var originalThen = getThenFunction(deferred);
-                deferred.then = function (onFulfilled, onRejected) {
-                    if (!called) {
-                        deferred.then = originalThen;
-                        called = true;
-                        executor(resolve, reject);
-                    }
-                    return originalThen(onFulfilled, onRejected);
-                };
-                return deferred;
-            }
-        }
-        Constructor_1.decorateConstructor = decorateConstructor;
-    })(Constructor = Welsh.Constructor || (Welsh.Constructor = {}));
-})(Welsh || (Welsh = {}));
-/// <reference path="./Promise.ts"/>
-/// <reference path="./Deferred.ts"/>
-/// <reference path="./Constructor.ts"/>
-"use strict";
-var Welsh;
-(function (Welsh) {
-    Welsh.Constructor.decorateConstructor(Welsh.Promise);
-    Welsh.Constructor.decorateConstructor(Welsh.Deferred);
-})(Welsh || (Welsh = {}));
 /// <reference path="./typings/node/node.d.ts"/>
 /// <reference path="./lib/index"/>
 "use strict";

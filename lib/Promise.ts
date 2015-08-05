@@ -1,5 +1,5 @@
 /// <reference path="./Helpers.ts"/>
-/// <reference path="./WelshBase.ts"/>
+/// <reference path="./Common.ts"/>
 /// <reference path="./Queue.ts"/>
 
 /*
@@ -19,9 +19,9 @@ namespace Welsh {
   var fulfilledState = 1;
   var rejectedState = 2;
 
-  export class Promise extends WelshBase {
+  export class Promise extends Common {
     constructor(executor) {
-      super();
+      super(executor);
 
       var state, settledResult, branched, pendingHandlers;
       var self = this;
@@ -132,8 +132,9 @@ namespace Welsh {
 
       function addPending(onFulfilled, onRejected) {
         if (state) {
+          var callback = state === fulfilledState ? onFulfilled : onRejected;
           queueCall(function () {
-            (state === fulfilledState ? onFulfilled : onRejected)(settledResult);
+            callback(settledResult);
           });
           return;
         }

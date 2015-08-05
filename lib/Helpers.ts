@@ -9,20 +9,6 @@
 "use strict";
 
 namespace Welsh.Helpers {
-  var slice = Array.prototype.slice;
-
-  /* istanbul ignore next */
-  var isArray = (function () {
-    if (Array.isArray) {
-      return Array.isArray;
-    }
-    var toString = Object.prototype.toString;
-    return function _isArray(obj) {
-      return obj && toString.call(obj) === '[object Array]';
-    };
-  }());
-
-  /* istanbul ignore next */
   var bindThis = (function () {
     if (Function.prototype.bind) {
       return function (func, thisVal) {
@@ -63,15 +49,6 @@ namespace Welsh.Helpers {
       if (typeof catchBlock === 'function') {
         return catchBlock(err);
       }
-    }
-  }
-
-  export function extractArrayArguments() {
-    if (arguments.length === 1 && isArray(arguments[0])) {
-      return slice.call(arguments[0]);
-    }
-    else {
-      return slice.call(arguments);
     }
   }
 }

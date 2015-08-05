@@ -1,5 +1,5 @@
 /// <reference path="./Helpers.ts"/>
-/// <reference path="./WelshBase.ts"/>
+/// <reference path="./Common.ts"/>
 
 /*
  * Welsh (Promises, but not really)
@@ -17,9 +17,9 @@ namespace Welsh {
   var fulfilledState = 1;
   var rejectedState = 2;
 
-  export class Deferred extends WelshBase {
+  export class Deferred extends Common {
     constructor(executor: Executor) {
-      super();
+      super(executor);
 
       var self = this;
 
