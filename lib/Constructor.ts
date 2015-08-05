@@ -8,7 +8,7 @@
 
 "use strict";
 
-module Welsh.Constructor {
+namespace Welsh.Constructor {
   import getThenFunction = Helpers.getThenFunction;
   import extractArrayArguments = Helpers.extractArrayArguments;
 

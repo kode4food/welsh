@@ -4,7 +4,7 @@
 
 var expect = require('chai').expect;
 var welsh = require('../dist/welsh-node');
-var helpers = welsh.helpers;
+var helpers = welsh.Helpers;
 
 describe("Welsh Helper tryCatch", function () {
   it("should allow Try block", function (done) {

@@ -11,7 +11,7 @@
 
 "use strict";
 
-module Welsh {
+namespace Welsh {
   import getThenFunction = Helpers.getThenFunction;
 
   var fulfilledState = 1;

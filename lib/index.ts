@@ -12,9 +12,7 @@
 
 "use strict";
 
-module Welsh {
-  export import helpers = Helpers;
-
+namespace Welsh {
   // Decorate the Deferred Constructors
   Constructor.decorateConstructor(Promise);
   Constructor.decorateConstructor(Deferred);

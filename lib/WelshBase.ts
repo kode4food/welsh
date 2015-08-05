@@ -10,7 +10,7 @@
 
 "use strict";
 
-module Welsh {
+namespace Welsh {
   import tryCatch = Helpers.tryCatch;
   import getThenFunction = Helpers.getThenFunction;
 

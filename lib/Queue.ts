@@ -8,7 +8,7 @@
 
 "use strict";
 
-module Welsh.Queue {
+namespace Welsh.Queue {
   var queue = [];
 
   /* istanbul ignore next */

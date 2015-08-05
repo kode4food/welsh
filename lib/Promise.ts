@@ -12,7 +12,7 @@
 
 "use strict";
 
-module Welsh {
+namespace Welsh {
   import getThenFunction = Helpers.getThenFunction;
   import queueCall = Queue.queueCall;
 

@@ -8,7 +8,7 @@
 
 "use strict";
 
-module Welsh.Helpers {
+namespace Welsh.Helpers {
   var slice = Array.prototype.slice;
 
   /* istanbul ignore next */
