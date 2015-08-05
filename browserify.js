@@ -1,3 +1,3 @@
 /* global window */
 "use strict";
-window.welsh = require('./index');
+window.welsh = require('./dist/welsh-node');

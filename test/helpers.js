@@ -3,7 +3,8 @@
 "use strict";
 
 var expect = require('chai').expect;
-var helpers = require('../lib/helpers');
+var welsh = require('../dist/welsh-node');
+var helpers = welsh.Helpers;
 
 describe("Welsh Helper tryCatch", function () {
   it("should allow Try block", function (done) {
