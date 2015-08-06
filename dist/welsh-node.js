@@ -558,6 +558,6 @@ var Welsh;
  */
 "use strict";
 /// <reference path="./typings/node/node.d.ts"/>
-/// <reference path="./lib/index"/>
+/// <reference path="./lib/Welsh.ts"/>
 "use strict";
 module.exports = Welsh;
