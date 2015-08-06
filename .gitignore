@@ -1,5 +1,3 @@
-*.int.js
-
 pids
 logs
 results
@@ -8,6 +6,7 @@ npm-debug.log
 node_modules
 coverage
 report
+typings
 
 .settings
 .idea
@@ -16,7 +15,3 @@ report
 
 *.sublime-workspace
 *.sublime-project
-
-public/.sass-cache
-public/components
-public/js/browser.js

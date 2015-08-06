@@ -54,6 +54,13 @@ var Welsh;
     })(Helpers = Welsh.Helpers || (Welsh.Helpers = {}));
 })(Welsh || (Welsh = {}));
 /// <reference path="./Helpers.ts"/>
+/*
+ * Welsh (Promises, but not really)
+ * Licensed under the MIT License
+ * see LICENSE.md
+ *
+ * @author Thomas S. Bradford (kode4food.it)
+ */
 "use strict";
 var Welsh;
 (function (Welsh) {
@@ -67,6 +74,7 @@ var Welsh;
     var State = Welsh.State;
     var Common = (function () {
         function Common(executor) {
+            // no-op
         }
         Common.prototype.then = function (onFulfilled, onRejected) {
             throw new Error("Not implemented");
@@ -273,6 +281,13 @@ var Welsh;
 /// <reference path="./Helpers.ts"/>
 /// <reference path="./Common.ts"/>
 /// <reference path="./Queue.ts"/>
+/*
+ * Welsh (Promises, but not really)
+ * Licensed under the MIT License
+ * see LICENSE.md
+ *
+ * @author Thomas S. Bradford (kode4food.it)
+ */
 "use strict";
 var __extends = (this && this.__extends) || function (d, b) {
     for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p];
@@ -435,6 +450,13 @@ var Welsh;
 })(Welsh || (Welsh = {}));
 /// <reference path="./Helpers.ts"/>
 /// <reference path="./Common.ts"/>
+/*
+ * Welsh (Promises, but not really)
+ * Licensed under the MIT License
+ * see LICENSE.md
+ *
+ * @author Thomas S. Bradford (kode4food.it)
+ */
 "use strict";
 var Welsh;
 (function (Welsh) {
@@ -527,6 +549,13 @@ var Welsh;
 })(Welsh || (Welsh = {}));
 /// <reference path="./Promise.ts"/>
 /// <reference path="./Deferred.ts"/>
+/*
+ * Welsh (Promises, but not really)
+ * Licensed under the MIT License
+ * see LICENSE.md
+ *
+ * @author Thomas S. Bradford (kode4food.it)
+ */
 "use strict";
 /// <reference path="./typings/node/node.d.ts"/>
 /// <reference path="./lib/index"/>
