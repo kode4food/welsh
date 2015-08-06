@@ -25,7 +25,8 @@
     "bower.json",
     "gulpfile.js",
     "index.js",
-    "package.json"
+    "package.json",
+    "typings"
   ],
   "dependencies": { },
   "devDependencies": { }
