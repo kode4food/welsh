@@ -183,11 +183,11 @@ var Welsh;
             });
         };
         Common.fromNode = function (nodeFunction) {
-            var Constructor = this;
+            var constructor = this;
             return nodeWrapper;
             function nodeWrapper() {
                 var wrapperArguments = arguments;
-                return new Constructor(function (resolve, reject) {
+                return new constructor(function (resolve, reject) {
                     var args = slice.call(wrapperArguments).concat(callback);
                     nodeFunction.apply(null, args);
                     function callback(err) {
@@ -201,7 +201,9 @@ var Welsh;
             }
         };
         Common.lazy = function (executor) {
-            var resolve, reject, called;
+            var resolve;
+            var reject;
+            var called;
             var deferred = new this(function (_resolve, _reject) {
                 resolve = _resolve;
                 reject = _reject;
@@ -220,8 +222,8 @@ var Welsh;
         return Common;
     })();
     Welsh.Common = Common;
-    function convertUsing(deferred, Constructor) {
-        return new Constructor(function (resolve, reject) {
+    function convertUsing(deferred, constructor) {
+        return new constructor(function (resolve, reject) {
             var then = getThenFunction(deferred);
             then(wrappedResolve, wrappedReject);
             function wrappedResolve(result) {
@@ -302,7 +304,7 @@ var Welsh;
         }
         Promise.prototype.resolve = function (result) {
             var _this = this;
-            if (this.state) {
+            if (this._state) {
                 return;
             }
             if (this === result) {
@@ -315,8 +317,8 @@ var Welsh;
                     this.doResolve(then);
                     return;
                 }
-                this.state = Welsh.State.fulfilledState;
-                this.settledResult = result;
+                this._state = Welsh.State.fulfilledState;
+                this._settledResult = result;
                 queueCall(function () { _this.notifyPending(); });
             }
             catch (err) {
@@ -325,17 +327,17 @@ var Welsh;
         };
         Promise.prototype.reject = function (reason) {
             var _this = this;
-            if (this.state) {
+            if (this._state) {
                 return;
             }
-            this.state = Welsh.State.rejectedState;
-            this.settledResult = reason;
+            this._state = Welsh.State.rejectedState;
+            this._settledResult = reason;
             queueCall(function () { _this.notifyPending(); });
         };
         Promise.prototype.doResolve = function (executor) {
+            var self = this;
             var done;
             try {
-                var self = this;
                 executor(wrappedResolve, wrappedReject);
             }
             catch (err) {
@@ -360,7 +362,8 @@ var Welsh;
             }
         };
         Promise.prototype.then = function (onFulfilled, onRejected) {
-            var resolve, reject;
+            var resolve;
+            var reject;
             this.addPending(fulfilledHandler, rejectedHandler);
             return new Promise(function (_resolve, _reject) {
                 resolve = _resolve;
@@ -393,7 +396,7 @@ var Welsh;
         };
         Promise.prototype.addPending = function (onFulfilled, onRejected) {
             var _this = this;
-            var state = this.state;
+            var state = this._state;
             if (state) {
                 var callback;
                 if (state === Welsh.State.fulfilledState) {
@@ -402,30 +405,30 @@ var Welsh;
                 else {
                     callback = onRejected;
                 }
-                queueCall(function () { callback(_this.settledResult); });
+                queueCall(function () { callback(_this._settledResult); });
                 return;
             }
             var item = [undefined, onFulfilled, onRejected];
-            var pendingHandlers = this.pendingHandlers;
+            var pendingHandlers = this._pendingHandlers;
             if (!pendingHandlers) {
-                this.pendingHandlers = item;
+                this._pendingHandlers = item;
                 return;
             }
-            if (!this.branched) {
-                this.pendingHandlers = [pendingHandlers, item];
-                this.branched = true;
+            if (!this._branched) {
+                this._pendingHandlers = [pendingHandlers, item];
+                this._branched = true;
                 return;
             }
             pendingHandlers[pendingHandlers.length] = item;
         };
         Promise.prototype.notifyPending = function () {
-            var pendingHandlers = this.pendingHandlers;
+            var pendingHandlers = this._pendingHandlers;
             if (!pendingHandlers) {
                 return;
             }
-            var state = this.state;
-            var settledResult = this.settledResult;
-            if (this.branched) {
+            var state = this._state;
+            var settledResult = this._settledResult;
+            if (this._branched) {
                 for (var i = 0, len = pendingHandlers.length; i < len; i++) {
                     pendingHandlers[i][state](settledResult);
                 }
@@ -434,7 +437,7 @@ var Welsh;
                 pendingHandlers[state](settledResult);
             }
             pendingHandlers = null;
-            this.branched = false;
+            this._branched = false;
         };
         return Promise;
     })(Welsh.Common);
@@ -450,8 +453,8 @@ var Welsh;
         __extends(Deferred, _super);
         function Deferred(executor) {
             _super.call(this, executor);
-            this.pendingHandlers = [];
-            this.pendingIndex = 0;
+            this._pendingHandlers = [];
+            this._pendingIndex = 0;
             var self = this;
             if (typeof executor !== 'function') {
                 reject(new Error("Deferred requires an Executor Function"));
@@ -471,32 +474,32 @@ var Welsh;
             }
         }
         Deferred.prototype.start = function (newState, result) {
-            if (this.state) {
+            if (this._state) {
                 return;
             }
-            this.state = newState;
+            this._state = newState;
             this.proceed(result);
         };
         Deferred.prototype.then = function (onFulfilled, onRejected) {
-            var pendingHandlers = this.pendingHandlers;
+            var pendingHandlers = this._pendingHandlers;
             pendingHandlers[pendingHandlers.length] = [
                 undefined, onFulfilled, onRejected
             ];
-            if (this.state && !this.running) {
-                this.proceed(this.pendingResult);
+            if (this._state && !this._running) {
+                this.proceed(this._pendingResult);
             }
             return this;
         };
         Deferred.prototype.proceed = function (result) {
-            this.running = true;
-            var pendingHandlers = this.pendingHandlers;
-            var pendingIndex = this.pendingIndex;
-            var state = this.state;
+            this._running = true;
+            var pendingHandlers = this._pendingHandlers;
+            var pendingIndex = this._pendingIndex;
+            var state = this._state;
             do {
                 var then = getThenFunction(result);
                 if (then) {
-                    this.pendingIndex = pendingIndex;
-                    this.state = state;
+                    this._pendingIndex = pendingIndex;
+                    this._state = state;
                     var self = this;
                     then(fulfilledLinker, rejectedLinker);
                     return;
@@ -516,18 +519,18 @@ var Welsh;
                     }
                 }
             } while (true);
-            this.pendingResult = result;
-            this.pendingHandlers = [];
-            this.pendingIndex = 0;
-            this.state = state;
-            this.running = false;
+            this._pendingResult = result;
+            this._pendingHandlers = [];
+            this._pendingIndex = 0;
+            this._state = state;
+            this._running = false;
             function fulfilledLinker(result) {
-                self.state = Welsh.State.fulfilledState;
+                self._state = Welsh.State.fulfilledState;
                 self.proceed(result);
                 return result;
             }
             function rejectedLinker(reason) {
-                self.state = Welsh.State.rejectedState;
+                self._state = Welsh.State.rejectedState;
                 self.proceed(reason);
                 throw reason;
             }

@@ -31,7 +31,6 @@
     "gulp-inject-string": "0.0.2",
     "gulp-mocha": "^2.1.2",
     "gulp-rename": "^1.2.2",
-    "gulp-tsd": "0.0.4",
     "gulp-typescript": "^2.8.0",
     "mocha": "^2.2.5",
     "promises-aplus-tests": "^2.1.1",
