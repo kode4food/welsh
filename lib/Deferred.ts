@@ -15,19 +15,16 @@ namespace Welsh {
   import getThenFunction = Helpers.getThenFunction;
 
   export class Deferred extends Common {
+    private _state: State;
+    private _running: boolean;
+    private _pendingResult: any;
+    private _pendingHandlers: Function[][] = [];
+    private _pendingIndex = 0;
+
     constructor(executor: Executor) {
       super(executor);
 
       var self = this;
-
-      var state: State;
-      var running: boolean;
-      var pendingResult: any;
-      var pendingHandlers: Function[][] = [];
-      var pendingIndex = 0;
-
-      this.then = appendThen;
-
       if ( typeof executor !== 'function' ) {
         reject(new Error("Deferred requires an Executor Function"));
         return;
@@ -40,74 +37,83 @@ namespace Welsh {
         reject(err);
       }
 
-      function resolve(result) {
-        start(State.fulfilledState, result);
+      function resolve(result?: any) {
+        self.start(State.fulfilledState, result);
       }
 
-      function reject(reason) {
-        start(State.rejectedState, reason);
+      function reject(reason?: any) {
+        self.start(State.rejectedState, reason);
       }
+    }
 
-      function start(newState: State, result) {
-        if ( state ) {
+    private start(newState: State, result?: any) {
+      if ( this._state ) {
+        return;
+      }
+      this._state = newState;
+      this.proceed(result);
+    }
+
+    public then(onFulfilled?: Resolver, onRejected?: Rejecter): Deferred {
+      var pendingHandlers = this._pendingHandlers;
+      pendingHandlers[pendingHandlers.length] = [
+        undefined, onFulfilled, onRejected
+      ];
+
+      if ( this._state && !this._running ) {
+        this.proceed(this._pendingResult);
+      }
+      return this;
+    }
+
+    private proceed(result? :any) {
+      this._running = true;
+      var pendingHandlers = this._pendingHandlers;
+      var pendingIndex = this._pendingIndex;
+      var state = this._state;
+
+      do {
+        var then = getThenFunction(result);
+        if ( then ) {
+          this._pendingIndex = pendingIndex;
+          this._state = state;
+          var self = this;
+          then(fulfilledLinker, rejectedLinker);
           return;
         }
-        state = newState;
-        proceed(result);
-      }
 
-      function appendThen(onFulfilled?: Resolver, onRejected?: Rejecter) {
-        pendingHandlers[pendingHandlers.length] = [
-          undefined, onFulfilled, onRejected
-        ];
-
-        if ( state && !running ) {
-          proceed(pendingResult);
+        if ( pendingIndex >= pendingHandlers.length ) {
+          break;
         }
-        return self;
-      }
 
-      function proceed(result? :any) {
-        running = true;
-        do {
-          var then = getThenFunction(result);
-          if ( then ) {
-            then(fulfilledLinker, rejectedLinker);
-            return;
+        var callback = pendingHandlers[pendingIndex++][state];
+        if ( typeof callback === 'function' ) {
+          try {
+            result = callback(result);
+            state = State.fulfilledState;
           }
-
-          if ( pendingIndex >= pendingHandlers.length ) {
-            break;
-          }
-
-          var callback = pendingHandlers[pendingIndex++][state];
-          if ( typeof callback === 'function' ) {
-            try {
-              result = callback(result);
-              state = State.fulfilledState;
-            }
-            catch ( reason ) {
-              result = reason;
-              state = State.rejectedState;
-            }
+          catch ( reason ) {
+            result = reason;
+            state = State.rejectedState;
           }
         }
-        while ( true );
-        pendingResult = result;
-        pendingHandlers = [];
-        pendingIndex = 0;
-        running = false;
       }
+      while ( true );
+      this._pendingResult = result;
+      this._pendingHandlers = [];
+      this._pendingIndex = 0;
+      this._state = state;
+      this._running = false;
 
-      function fulfilledLinker(result) {
-        state = State.fulfilledState;
-        proceed(result);
+      function fulfilledLinker(result?: any) {
+        self._state = State.fulfilledState;
+        self.proceed(result);
         return result;
       }
 
-      function rejectedLinker(reason) {
-        state = State.rejectedState;
-        proceed(reason);
+      function rejectedLinker(reason?: any) {
+        self._state = State.rejectedState;
+        self.proceed(reason);
         throw reason;
       }
     }

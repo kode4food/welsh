@@ -11,12 +11,12 @@
 namespace Welsh.Helpers {
   export var bindThis = (function () {
     if ( Function.prototype.bind ) {
-      return function (func, thisVal) {
+      return function (func: Function, thisVal: Object) {
         return func.bind(thisVal);
       };
     }
 
-    return function (func, thisVal) {
+    return function (func: Function, thisVal: Object) {
       return function () {
         return func.apply(thisVal, arguments);
       };

@@ -31,6 +31,10 @@ namespace Welsh {
     then(onFulfilled?: Resolver, onRejected?: Rejecter): Thenable;
   }
 
+  interface CommonConstructable {
+    new(executor: Executor): Common;
+  }
+
   export class Common implements Thenable {
     constructor(executor: Executor) {
       // no-op
@@ -47,12 +51,12 @@ namespace Welsh {
     finally(onFinally?: Finalizer): Common {
       return this.then(wrappedFulfilled, wrappedRejected);
 
-      function wrappedFulfilled(result) {
+      function wrappedFulfilled(result?: any) {
         tryCatch(onFinally);
         return result;
       }
 
-      function wrappedRejected(reason) {
+      function wrappedRejected(reason?: any) {
         tryCatch(onFinally);
         throw reason;
       }
@@ -61,7 +65,7 @@ namespace Welsh {
     toNode(callback: NodeCallback): Common {
       return this.then(wrappedFulfilled, wrappedRejected);
 
-      function wrappedFulfilled(result) {
+      function wrappedFulfilled(result?: any) {
         try {
           callback(null, result);
         }
@@ -70,7 +74,7 @@ namespace Welsh {
         }
       }
 
-      function wrappedRejected(reason) {
+      function wrappedRejected(reason?: any) {
         try {
           callback(reason);
         }
@@ -136,10 +140,10 @@ namespace Welsh {
           resolve(thenables);
         }
 
-        function resolveThenAtIndex(then, index) {
+        function resolveThenAtIndex(then: Function, index: number) {
           then(wrappedResolve, wrappedReject);
 
-          function wrappedResolve(result) {
+          function wrappedResolve(result?: any) {
             thenables[index] = result;
             if ( !--waitingFor ) {
               resolve(thenables);
@@ -147,7 +151,7 @@ namespace Welsh {
             return result;
           }
 
-          function wrappedReject(reason) {
+          function wrappedReject(reason?: any) {
             reject(reason);
             throw reason;
           }
@@ -156,16 +160,16 @@ namespace Welsh {
     }
 
     static fromNode(nodeFunction: Function): Function {
-      var Constructor = this;
+      var constructor = this;
       return nodeWrapper;
 
       function nodeWrapper() {
         var wrapperArguments = arguments;
-        return new Constructor(function (resolve, reject) {
+        return new constructor(function (resolve, reject) {
           var args = slice.call(wrapperArguments).concat(callback);
           nodeFunction.apply(null, args);
 
-          function callback(err) {
+          function callback(err: any) {
             if ( err ) {
               reject(err);
               return;
@@ -177,7 +181,9 @@ namespace Welsh {
     }
 
     static lazy(executor: Executor): Common {
-      var resolve, reject, called;
+      var resolve: Resolver;
+      var reject: Rejecter;
+      var called: boolean;
 
       var deferred = new this(function (_resolve, _reject) {
         resolve = _resolve;
@@ -198,17 +204,17 @@ namespace Welsh {
     }
   }
 
-  function convertUsing(deferred, Constructor) {
-    return new Constructor(function (resolve, reject) {
+  function convertUsing(deferred: Thenable, constructor: CommonConstructable) {
+    return new constructor(function (resolve: Resolver, reject: Rejecter) {
       var then = getThenFunction(deferred);
       then(wrappedResolve, wrappedReject);
 
-      function wrappedResolve(result) {
+      function wrappedResolve(result?: any) {
         resolve(result);
         return result;
       }
 
-      function wrappedReject(reason) {
+      function wrappedReject(reason?: any) {
         reject(reason);
         throw reason;
       }

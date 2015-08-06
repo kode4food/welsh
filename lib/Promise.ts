@@ -17,165 +17,169 @@ namespace Welsh {
   import queueCall = Queue.queueCall;
 
   export class Promise extends Common {
+    private _state: State;
+    private _settledResult: any;
+    private _branched: boolean;
+    private _pendingHandlers: any;
+
     constructor(executor: Executor) {
       super(executor);
 
-      var state: State;
-      var settledResult: any;
-      var branched: boolean;
-      var pendingHandlers: any;
-      var self = this;
-
-      this.then = createThen;
-
       if ( typeof executor !== 'function' ) {
-        reject(new Error("Promise requires an Executor Function"));
+        this.reject(new Error("Promise requires an Executor Function"));
         return;
       }
-      doResolve(executor);
+      this.doResolve(executor);
+    }
 
-      function resolve(result) {
-        if ( state ) {
+    protected resolve(result?: any) {
+      if ( this._state ) {
+        return;
+      }
+      if ( this === result ) {
+        this.reject(new TypeError("Um, yeah, a Promise can't resolve itself"));
+        return;
+      }
+      try {
+        var then = getThenFunction(result);
+        if ( then ) {
+          this.doResolve(then);
           return;
         }
-        if ( self === result ) {
-          reject(new TypeError("Um, yeah, a Promise can't resolve itself"));
+        this._state = State.fulfilledState;
+        this._settledResult = result;
+        queueCall(() => { this.notifyPending(); });
+      }
+      catch ( err ) {
+        this.reject(err);
+      }
+    }
+
+    protected reject(reason?: any) {
+      if ( this._state ) {
+        return;
+      }
+      this._state = State.rejectedState;
+      this._settledResult = reason;
+      queueCall(() => { this.notifyPending(); });
+    }
+
+    private doResolve(executor: Executor) {
+      var self = this;
+      var done: boolean;
+
+      try {
+        executor(wrappedResolve, wrappedReject);
+      }
+      catch ( err ) {
+        if ( done ) {
           return;
         }
-        try {
-          var then = getThenFunction(result);
-          if ( then ) {
-            doResolve(then);
-            return;
-          }
-          state = State.fulfilledState;
-          settledResult = result;
-          queueCall(notifyPending);
-        }
-        catch ( err ) {
-          reject(err);
-        }
+        this.reject(err);
       }
 
-      function reject(reason) {
-        if ( state ) {
+      function wrappedResolve(result?: any) {
+        if ( done ) {
           return;
         }
-        state = State.rejectedState;
-        settledResult = reason;
-        queueCall(notifyPending);
+        done = true;
+        self.resolve(result);
       }
 
-      function doResolve(executor: Executor) {
-        var done;
-        try {
-          executor(wrappedResolve, wrappedReject);
+      function wrappedReject(reason?: any) {
+        if ( done ) {
+          return;
         }
-        catch ( err ) {
-          if ( done ) {
-            return;
-          }
-          reject(err);
-        }
+        done = true;
+        self.reject(reason);
+      }
+    }
 
-        function wrappedResolve(result) {
-          if ( done ) {
-            return;
-          }
-          done = true;
+    public then(onFulfilled?: Resolver, onRejected?: Rejecter): Promise {
+      var resolve: Resolver;
+      var reject: Rejecter;
+      this.addPending(fulfilledHandler, rejectedHandler);
+      return new Promise(function (_resolve, _reject) {
+        resolve = _resolve;
+        reject = _reject;
+      });
+
+      function fulfilledHandler(result?: any) {
+        if ( typeof onFulfilled !== 'function' ) {
           resolve(result);
+          return;
         }
+        try {
+          resolve(onFulfilled(result));
+        }
+        catch ( err ) {
+          reject(err);
+        }
+      }
 
-        function wrappedReject(reason) {
-          if ( done ) {
-            return;
-          }
-          done = true;
+      function rejectedHandler(reason?: any) {
+        if ( typeof onRejected !== 'function' ) {
           reject(reason);
+          return;
+        }
+        try {
+          resolve(onRejected(reason));
+        }
+        catch ( err ) {
+          reject(err);
         }
       }
+    }
 
-      function createThen(onFulfilled?: Resolver, onRejected?: Rejecter) {
-        var resolve, reject;
-        addPending(fulfilledHandler, rejectedHandler);
-        return new Promise(function (_resolve, _reject) {
-          resolve = _resolve;
-          reject = _reject;
-        });
-
-        function fulfilledHandler(result) {
-          if ( typeof onFulfilled !== 'function' ) {
-            resolve(result);
-            return;
-          }
-          try {
-            resolve(onFulfilled(result));
-          }
-          catch ( err ) {
-            reject(err);
-          }
-        }
-
-        function rejectedHandler(reason) {
-          if ( typeof onRejected !== 'function' ) {
-            reject(reason);
-            return;
-          }
-          try {
-            resolve(onRejected(reason));
-          }
-          catch ( err ) {
-            reject(err);
-          }
-        }
-      }
-
-      function addPending(onFulfilled?: Resolver, onRejected?: Rejecter) {
-        if ( state ) {
-          var callback;
-          if ( state === State.fulfilledState ) {
-            callback = onFulfilled;
-          }
-          else {
-            callback = onRejected;
-          }
-
-          queueCall(function () {
-            callback(settledResult);
-          });
-          return;
-        }
-
-        var item = [undefined, onFulfilled, onRejected];
-        if ( !pendingHandlers ) {
-          pendingHandlers = item;
-          return;
-        }
-
-        if ( !branched ) {
-          pendingHandlers = [pendingHandlers, item];
-          branched = true;
-          return;
-        }
-
-        pendingHandlers[pendingHandlers.length] = item;
-      }
-
-      function notifyPending() {
-        if ( !pendingHandlers ) {
-          return;
-        }
-        if ( branched ) {
-          for ( var i = 0, len = pendingHandlers.length; i < len; i++ ) {
-            pendingHandlers[i][state](settledResult);
-          }
+    private addPending(onFulfilled?: Resolver, onRejected?: Rejecter) {
+      var state = this._state;
+      if ( state ) {
+        var callback: Function;
+        if ( state === State.fulfilledState ) {
+          callback = onFulfilled;
         }
         else {
-          pendingHandlers[state](settledResult);
+          callback = onRejected;
         }
-        pendingHandlers = null;
-        branched = false;
+
+        queueCall(() => { callback(this._settledResult); });
+        return;
       }
+
+      var item = [undefined, onFulfilled, onRejected];
+
+      var pendingHandlers = this._pendingHandlers;
+      if ( !pendingHandlers ) {
+        this._pendingHandlers = item;
+        return;
+      }
+
+      if ( !this._branched ) {
+        this._pendingHandlers = [pendingHandlers, item];
+        this._branched = true;
+        return;
+      }
+
+      pendingHandlers[pendingHandlers.length] = item;
+    }
+
+    private notifyPending() {
+      var pendingHandlers = this._pendingHandlers;
+      if ( !pendingHandlers ) {
+        return;
+      }
+      var state = this._state;
+      var settledResult = this._settledResult;
+      if ( this._branched ) {
+        for ( var i = 0, len = pendingHandlers.length; i < len; i++ ) {
+          pendingHandlers[i][state](settledResult);
+        }
+      }
+      else {
+        pendingHandlers[state](settledResult);
+      }
+      pendingHandlers = null;
+      this._branched = false;
     }
   }
 }

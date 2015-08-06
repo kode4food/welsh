@@ -4,7 +4,8 @@
     "module": "commonjs",
     "removeComments": true,
     "out": "dist/welsh-node.js",
-    "sourceMap": false
+    "sourceMap": false,
+    "noImplicitAny": true
   },
   "files": [
     "index.ts"

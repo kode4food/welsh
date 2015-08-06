@@ -294,147 +294,148 @@ var Welsh;
         __extends(Promise, _super);
         function Promise(executor) {
             _super.call(this, executor);
-            var state;
-            var settledResult;
-            var branched;
-            var pendingHandlers;
-            var self = this;
-            this.then = createThen;
             if (typeof executor !== 'function') {
-                reject(new Error("Promise requires an Executor Function"));
+                this.reject(new Error("Promise requires an Executor Function"));
                 return;
             }
-            doResolve(executor);
-            function resolve(result) {
-                if (state) {
-                    return;
-                }
-                if (self === result) {
-                    reject(new TypeError("Um, yeah, a Promise can't resolve itself"));
-                    return;
-                }
-                try {
-                    var then = getThenFunction(result);
-                    if (then) {
-                        doResolve(then);
-                        return;
-                    }
-                    state = Welsh.State.fulfilledState;
-                    settledResult = result;
-                    queueCall(notifyPending);
-                }
-                catch (err) {
-                    reject(err);
-                }
+            this.doResolve(executor);
+        }
+        Promise.prototype.resolve = function (result) {
+            var _this = this;
+            if (this.state) {
+                return;
             }
-            function reject(reason) {
-                if (state) {
+            if (this === result) {
+                this.reject(new TypeError("Um, yeah, a Promise can't resolve itself"));
+                return;
+            }
+            try {
+                var then = getThenFunction(result);
+                if (then) {
+                    this.doResolve(then);
                     return;
                 }
-                state = Welsh.State.rejectedState;
-                settledResult = reason;
-                queueCall(notifyPending);
+                this.state = Welsh.State.fulfilledState;
+                this.settledResult = result;
+                queueCall(function () { _this.notifyPending(); });
             }
-            function doResolve(executor) {
-                var done;
-                try {
-                    executor(wrappedResolve, wrappedReject);
+            catch (err) {
+                this.reject(err);
+            }
+        };
+        Promise.prototype.reject = function (reason) {
+            var _this = this;
+            if (this.state) {
+                return;
+            }
+            this.state = Welsh.State.rejectedState;
+            this.settledResult = reason;
+            queueCall(function () { _this.notifyPending(); });
+        };
+        Promise.prototype.doResolve = function (executor) {
+            var done;
+            try {
+                var self = this;
+                executor(wrappedResolve, wrappedReject);
+            }
+            catch (err) {
+                if (done) {
+                    return;
                 }
-                catch (err) {
-                    if (done) {
-                        return;
-                    }
-                    reject(err);
+                this.reject(err);
+            }
+            function wrappedResolve(result) {
+                if (done) {
+                    return;
                 }
-                function wrappedResolve(result) {
-                    if (done) {
-                        return;
-                    }
-                    done = true;
+                done = true;
+                self.resolve(result);
+            }
+            function wrappedReject(reason) {
+                if (done) {
+                    return;
+                }
+                done = true;
+                self.reject(reason);
+            }
+        };
+        Promise.prototype.then = function (onFulfilled, onRejected) {
+            var resolve, reject;
+            this.addPending(fulfilledHandler, rejectedHandler);
+            return new Promise(function (_resolve, _reject) {
+                resolve = _resolve;
+                reject = _reject;
+            });
+            function fulfilledHandler(result) {
+                if (typeof onFulfilled !== 'function') {
                     resolve(result);
+                    return;
                 }
-                function wrappedReject(reason) {
-                    if (done) {
-                        return;
-                    }
-                    done = true;
+                try {
+                    resolve(onFulfilled(result));
+                }
+                catch (err) {
+                    reject(err);
+                }
+            }
+            function rejectedHandler(reason) {
+                if (typeof onRejected !== 'function') {
                     reject(reason);
+                    return;
+                }
+                try {
+                    resolve(onRejected(reason));
+                }
+                catch (err) {
+                    reject(err);
                 }
             }
-            function createThen(onFulfilled, onRejected) {
-                var resolve, reject;
-                addPending(fulfilledHandler, rejectedHandler);
-                return new Promise(function (_resolve, _reject) {
-                    resolve = _resolve;
-                    reject = _reject;
-                });
-                function fulfilledHandler(result) {
-                    if (typeof onFulfilled !== 'function') {
-                        resolve(result);
-                        return;
-                    }
-                    try {
-                        resolve(onFulfilled(result));
-                    }
-                    catch (err) {
-                        reject(err);
-                    }
-                }
-                function rejectedHandler(reason) {
-                    if (typeof onRejected !== 'function') {
-                        reject(reason);
-                        return;
-                    }
-                    try {
-                        resolve(onRejected(reason));
-                    }
-                    catch (err) {
-                        reject(err);
-                    }
-                }
-            }
-            function addPending(onFulfilled, onRejected) {
-                if (state) {
-                    var callback;
-                    if (state === Welsh.State.fulfilledState) {
-                        callback = onFulfilled;
-                    }
-                    else {
-                        callback = onRejected;
-                    }
-                    queueCall(function () {
-                        callback(settledResult);
-                    });
-                    return;
-                }
-                var item = [undefined, onFulfilled, onRejected];
-                if (!pendingHandlers) {
-                    pendingHandlers = item;
-                    return;
-                }
-                if (!branched) {
-                    pendingHandlers = [pendingHandlers, item];
-                    branched = true;
-                    return;
-                }
-                pendingHandlers[pendingHandlers.length] = item;
-            }
-            function notifyPending() {
-                if (!pendingHandlers) {
-                    return;
-                }
-                if (branched) {
-                    for (var i = 0, len = pendingHandlers.length; i < len; i++) {
-                        pendingHandlers[i][state](settledResult);
-                    }
+        };
+        Promise.prototype.addPending = function (onFulfilled, onRejected) {
+            var _this = this;
+            var state = this.state;
+            if (state) {
+                var callback;
+                if (state === Welsh.State.fulfilledState) {
+                    callback = onFulfilled;
                 }
                 else {
-                    pendingHandlers[state](settledResult);
+                    callback = onRejected;
                 }
-                pendingHandlers = null;
-                branched = false;
+                queueCall(function () { callback(_this.settledResult); });
+                return;
             }
-        }
+            var item = [undefined, onFulfilled, onRejected];
+            var pendingHandlers = this.pendingHandlers;
+            if (!pendingHandlers) {
+                this.pendingHandlers = item;
+                return;
+            }
+            if (!this.branched) {
+                this.pendingHandlers = [pendingHandlers, item];
+                this.branched = true;
+                return;
+            }
+            pendingHandlers[pendingHandlers.length] = item;
+        };
+        Promise.prototype.notifyPending = function () {
+            var pendingHandlers = this.pendingHandlers;
+            if (!pendingHandlers) {
+                return;
+            }
+            var state = this.state;
+            var settledResult = this.settledResult;
+            if (this.branched) {
+                for (var i = 0, len = pendingHandlers.length; i < len; i++) {
+                    pendingHandlers[i][state](settledResult);
+                }
+            }
+            else {
+                pendingHandlers[state](settledResult);
+            }
+            pendingHandlers = null;
+            this.branched = false;
+        };
         return Promise;
     })(Welsh.Common);
     Welsh.Promise = Promise;
@@ -449,13 +450,9 @@ var Welsh;
         __extends(Deferred, _super);
         function Deferred(executor) {
             _super.call(this, executor);
+            this.pendingHandlers = [];
+            this.pendingIndex = 0;
             var self = this;
-            var state;
-            var running;
-            var pendingResult;
-            var pendingHandlers = [];
-            var pendingIndex = 0;
-            this.then = appendThen;
             if (typeof executor !== 'function') {
                 reject(new Error("Deferred requires an Executor Function"));
                 return;
@@ -467,66 +464,74 @@ var Welsh;
                 reject(err);
             }
             function resolve(result) {
-                start(Welsh.State.fulfilledState, result);
+                self.start(Welsh.State.fulfilledState, result);
             }
             function reject(reason) {
-                start(Welsh.State.rejectedState, reason);
+                self.start(Welsh.State.rejectedState, reason);
             }
-            function start(newState, result) {
-                if (state) {
+        }
+        Deferred.prototype.start = function (newState, result) {
+            if (this.state) {
+                return;
+            }
+            this.state = newState;
+            this.proceed(result);
+        };
+        Deferred.prototype.then = function (onFulfilled, onRejected) {
+            var pendingHandlers = this.pendingHandlers;
+            pendingHandlers[pendingHandlers.length] = [
+                undefined, onFulfilled, onRejected
+            ];
+            if (this.state && !this.running) {
+                this.proceed(this.pendingResult);
+            }
+            return this;
+        };
+        Deferred.prototype.proceed = function (result) {
+            this.running = true;
+            var pendingHandlers = this.pendingHandlers;
+            var pendingIndex = this.pendingIndex;
+            var state = this.state;
+            do {
+                var then = getThenFunction(result);
+                if (then) {
+                    this.pendingIndex = pendingIndex;
+                    this.state = state;
+                    var self = this;
+                    then(fulfilledLinker, rejectedLinker);
                     return;
                 }
-                state = newState;
-                proceed(result);
-            }
-            function appendThen(onFulfilled, onRejected) {
-                pendingHandlers[pendingHandlers.length] = [
-                    undefined, onFulfilled, onRejected
-                ];
-                if (state && !running) {
-                    proceed(pendingResult);
+                if (pendingIndex >= pendingHandlers.length) {
+                    break;
                 }
-                return self;
-            }
-            function proceed(result) {
-                running = true;
-                do {
-                    var then = getThenFunction(result);
-                    if (then) {
-                        then(fulfilledLinker, rejectedLinker);
-                        return;
+                var callback = pendingHandlers[pendingIndex++][state];
+                if (typeof callback === 'function') {
+                    try {
+                        result = callback(result);
+                        state = Welsh.State.fulfilledState;
                     }
-                    if (pendingIndex >= pendingHandlers.length) {
-                        break;
+                    catch (reason) {
+                        result = reason;
+                        state = Welsh.State.rejectedState;
                     }
-                    var callback = pendingHandlers[pendingIndex++][state];
-                    if (typeof callback === 'function') {
-                        try {
-                            result = callback(result);
-                            state = Welsh.State.fulfilledState;
-                        }
-                        catch (reason) {
-                            result = reason;
-                            state = Welsh.State.rejectedState;
-                        }
-                    }
-                } while (true);
-                pendingResult = result;
-                pendingHandlers = [];
-                pendingIndex = 0;
-                running = false;
-            }
+                }
+            } while (true);
+            this.pendingResult = result;
+            this.pendingHandlers = [];
+            this.pendingIndex = 0;
+            this.state = state;
+            this.running = false;
             function fulfilledLinker(result) {
-                state = Welsh.State.fulfilledState;
-                proceed(result);
+                self.state = Welsh.State.fulfilledState;
+                self.proceed(result);
                 return result;
             }
             function rejectedLinker(reason) {
-                state = Welsh.State.rejectedState;
-                proceed(reason);
+                self.state = Welsh.State.rejectedState;
+                self.proceed(reason);
                 throw reason;
             }
-        }
+        };
         return Deferred;
     })(Welsh.Common);
     Welsh.Deferred = Deferred;
