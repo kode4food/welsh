@@ -16,11 +16,14 @@ namespace Welsh {
   import tryCatch = Helpers.tryCatch;
   import getThenFunction = Helpers.getThenFunction;
 
-  export type Resolver = (result?: any) => void;
-  export type Rejecter = (reason?: any) => void;
+  export type Result = any;
+  export type Reason = any;
+  export type ResultOrReason = Result | Reason;
+  export type Resolver = (result?: Result) => void;
+  export type Rejecter = (reason?: Reason) => void;
   export type Finalizer = () => void;
   export type Executor = (resolve: Resolver, reject: Rejecter) => void;
-  export type NodeCallback = (err: any, result?: any) => void;
+  export type NodeCallback = (err: any, arg?: any) => void;
 
   export enum State {
     fulfilledState = 1,
@@ -51,12 +54,12 @@ namespace Welsh {
     finally(onFinally?: Finalizer): Common {
       return this.then(wrappedFulfilled, wrappedRejected);
 
-      function wrappedFulfilled(result?: any) {
+      function wrappedFulfilled(result?: Result) {
         tryCatch(onFinally);
         return result;
       }
 
-      function wrappedRejected(reason?: any) {
+      function wrappedRejected(reason?: Reason) {
         tryCatch(onFinally);
         throw reason;
       }
@@ -65,7 +68,7 @@ namespace Welsh {
     toNode(callback: NodeCallback): Common {
       return this.then(wrappedFulfilled, wrappedRejected);
 
-      function wrappedFulfilled(result?: any) {
+      function wrappedFulfilled(result?: Result) {
         try {
           callback(null, result);
         }
@@ -74,7 +77,7 @@ namespace Welsh {
         }
       }
 
-      function wrappedRejected(reason?: any) {
+      function wrappedRejected(reason?: Reason) {
         try {
           callback(reason);
         }
@@ -92,13 +95,13 @@ namespace Welsh {
       return convertUsing(this, Welsh.Deferred);
     }
 
-    static resolve(result?: any): Common {
+    static resolve(result?: Result): Common {
       return new this(function (resolve) {
         resolve(result);
       });
     }
 
-    static reject(reason?: any): Common {
+    static reject(reason?: Reason): Common {
       return new this(function (resolve, reject) {
         reject(reason);
       });
@@ -143,7 +146,7 @@ namespace Welsh {
         function resolveThenAtIndex(then: Function, index: number) {
           then(wrappedResolve, wrappedReject);
 
-          function wrappedResolve(result?: any) {
+          function wrappedResolve(result?: Result) {
             thenables[index] = result;
             if ( !--waitingFor ) {
               resolve(thenables);
@@ -151,7 +154,7 @@ namespace Welsh {
             return result;
           }
 
-          function wrappedReject(reason?: any) {
+          function wrappedReject(reason?: Reason) {
             reject(reason);
             throw reason;
           }
@@ -209,12 +212,12 @@ namespace Welsh {
       var then = getThenFunction(deferred);
       then(wrappedResolve, wrappedReject);
 
-      function wrappedResolve(result?: any) {
+      function wrappedResolve(result?: Result) {
         resolve(result);
         return result;
       }
 
-      function wrappedReject(reason?: any) {
+      function wrappedReject(reason?: Reason) {
         reject(reason);
         throw reason;
       }

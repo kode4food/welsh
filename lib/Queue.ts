@@ -16,7 +16,7 @@ namespace Welsh.Queue {
       return setImmediate;
     }
     if ( typeof window === 'object' &&
-      typeof window.requestAnimationFrame === 'function' ) {
+         typeof window.requestAnimationFrame === 'function' ) {
       return window.requestAnimationFrame;
     }
     if ( typeof setTimeout === 'function' ) {

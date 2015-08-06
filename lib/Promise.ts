@@ -18,7 +18,7 @@ namespace Welsh {
 
   export class Promise extends Common {
     private _state: State;
-    private _settledResult: any;
+    private _settledResult: ResultOrReason;
     private _branched: boolean;
     private _pendingHandlers: any;
 
@@ -32,7 +32,7 @@ namespace Welsh {
       this.doResolve(executor);
     }
 
-    protected resolve(result?: any) {
+    protected resolve(result?: Result) {
       if ( this._state ) {
         return;
       }
@@ -55,7 +55,7 @@ namespace Welsh {
       }
     }
 
-    protected reject(reason?: any) {
+    protected reject(reason?: Reason) {
       if ( this._state ) {
         return;
       }
@@ -78,7 +78,7 @@ namespace Welsh {
         this.reject(err);
       }
 
-      function wrappedResolve(result?: any) {
+      function wrappedResolve(result?: Result) {
         if ( done ) {
           return;
         }
@@ -86,7 +86,7 @@ namespace Welsh {
         self.resolve(result);
       }
 
-      function wrappedReject(reason?: any) {
+      function wrappedReject(reason?: Reason) {
         if ( done ) {
           return;
         }
@@ -104,7 +104,7 @@ namespace Welsh {
         reject = _reject;
       });
 
-      function fulfilledHandler(result?: any) {
+      function fulfilledHandler(result?: Result) {
         if ( typeof onFulfilled !== 'function' ) {
           resolve(result);
           return;
@@ -117,7 +117,7 @@ namespace Welsh {
         }
       }
 
-      function rejectedHandler(reason?: any) {
+      function rejectedHandler(reason?: Reason) {
         if ( typeof onRejected !== 'function' ) {
           reject(reason);
           return;
@@ -155,7 +155,7 @@ namespace Welsh {
       }
 
       if ( !this._branched ) {
-        this._pendingHandlers = [pendingHandlers, item];
+        this._pendingHandlers = [<Function[]>pendingHandlers, item];
         this._branched = true;
         return;
       }
@@ -178,7 +178,7 @@ namespace Welsh {
       else {
         pendingHandlers[state](settledResult);
       }
-      pendingHandlers = null;
+      this._pendingHandlers = null;
       this._branched = false;
     }
   }

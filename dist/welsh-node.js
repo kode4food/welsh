@@ -430,7 +430,7 @@ var Welsh;
             else {
                 pendingHandlers[state](settledResult);
             }
-            pendingHandlers = null;
+            this._pendingHandlers = null;
             this._branched = false;
         };
         return Promise;

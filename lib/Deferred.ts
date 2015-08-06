@@ -17,7 +17,7 @@ namespace Welsh {
   export class Deferred extends Common {
     private _state: State;
     private _running: boolean;
-    private _pendingResult: any;
+    private _pendingResult: ResultOrReason;
     private _pendingHandlers: Function[][] = [];
     private _pendingIndex = 0;
 
@@ -37,16 +37,16 @@ namespace Welsh {
         reject(err);
       }
 
-      function resolve(result?: any) {
+      function resolve(result?: Result) {
         self.start(State.fulfilledState, result);
       }
 
-      function reject(reason?: any) {
+      function reject(reason?: Reason) {
         self.start(State.rejectedState, reason);
       }
     }
 
-    private start(newState: State, result?: any) {
+    private start(newState: State, result?: ResultOrReason) {
       if ( this._state ) {
         return;
       }
@@ -66,7 +66,7 @@ namespace Welsh {
       return this;
     }
 
-    private proceed(result? :any) {
+    private proceed(result?: ResultOrReason) {
       this._running = true;
       var pendingHandlers = this._pendingHandlers;
       var pendingIndex = this._pendingIndex;
@@ -105,13 +105,13 @@ namespace Welsh {
       this._state = state;
       this._running = false;
 
-      function fulfilledLinker(result?: any) {
+      function fulfilledLinker(result?: Result) {
         self._state = State.fulfilledState;
         self.proceed(result);
         return result;
       }
 
-      function rejectedLinker(reason?: any) {
+      function rejectedLinker(reason?: Reason) {
         self._state = State.rejectedState;
         self.proceed(reason);
         throw reason;
