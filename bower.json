@@ -24,9 +24,10 @@
     ".*",
     "bower.json",
     "gulpfile.js",
-    "index.js",
+    "index.ts",
     "package.json",
-    "typings"
+    "typings",
+    "lib/*.ts"
   ],
   "dependencies": { },
   "devDependencies": { }
