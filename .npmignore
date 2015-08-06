@@ -6,7 +6,6 @@ npm-debug.log
 node_modules
 coverage
 report
-typings
 
 .*
 *.iml
@@ -14,5 +13,3 @@ typings
 
 *.sublime-workspace
 *.sublime-project
-
-public/.sass-cache

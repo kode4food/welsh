@@ -1,6 +1,6 @@
 {
   "name": "welsh",
-  "version": "3.1.0",
+  "version": "3.1.1",
   "description": "Promises, but not really",
   "authors": ["Thomas S. Bradford"],
   "main": "dist/welsh.min.js",
@@ -27,7 +27,9 @@
     "index.ts",
     "package.json",
     "typings",
-    "lib/*.ts"
+    "lib/*.ts",
+    "tsd.json",
+    "tsconfig.json"
   ],
   "dependencies": { },
   "devDependencies": { }

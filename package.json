@@ -1,6 +1,6 @@
 {
   "name": "welsh",
-  "version": "3.1.0",
+  "version": "3.1.1",
   "description": " A+ Promises and Deferreds à la Twisted",
   "main": "dist/welsh-node.js",
   "scripts": {
