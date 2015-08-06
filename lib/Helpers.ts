@@ -9,7 +9,7 @@
 "use strict";
 
 namespace Welsh.Helpers {
-  var bindThis = (function () {
+  export var bindThis = (function () {
     if ( Function.prototype.bind ) {
       return function (func, thisVal) {
         return func.bind(thisVal);

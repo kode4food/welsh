@@ -1,9 +1,9 @@
 "use strict";
 
-var fs = require('fs');
 var path = require('path');
 
 var gulp = require('gulp');
+var tsd = require('gulp-tsd');
 var typescript = require('gulp-typescript');
 var mocha = require('gulp-mocha');
 
@@ -44,7 +44,14 @@ gulp.task('test', ['compile'], function (done) {
   gulp.src(testFiles).pipe(mocha(mochaConfig)).on('end', done);
 });
 
-gulp.task('compile', function() {
+gulp.task('tsd', function (callback) {
+  tsd({
+    command: 'reinstall',
+    config: './tsd.json'
+  }, callback);
+});
+
+gulp.task('compile', ['tsd'], function() {
   var tsResult = tsProject.src().pipe(typescript(tsProject));
   return tsResult.js.pipe(gulp.dest('.'));
 });

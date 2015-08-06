@@ -9,7 +9,7 @@
 "use strict";
 
 namespace Welsh.Queue {
-  var queue = [];
+  var queue: Function[] = [];
 
   var nextTick = (function () {
     if ( typeof setImmediate === 'function' ) {

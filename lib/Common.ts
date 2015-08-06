@@ -11,6 +11,8 @@
 "use strict";
 
 namespace Welsh {
+  var slice = Array.prototype.slice;
+
   import tryCatch = Helpers.tryCatch;
   import getThenFunction = Helpers.getThenFunction;
 
@@ -19,8 +21,6 @@ namespace Welsh {
   export type Finalizer = () => void;
   export type Executor = (resolve: Resolver, reject: Rejecter) => void;
   export type NodeCallback = (err: any, result?: any) => void;
-
-  var slice = Array.prototype.slice;
 
   export enum State {
     fulfilledState = 1,

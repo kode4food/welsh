@@ -16,7 +16,7 @@ var Welsh;
 (function (Welsh) {
     var Helpers;
     (function (Helpers) {
-        var bindThis = (function () {
+        Helpers.bindThis = (function () {
             if (Function.prototype.bind) {
                 return function (func, thisVal) {
                     return func.bind(thisVal);
@@ -40,7 +40,7 @@ var Welsh;
             if (typeof then !== 'function') {
                 return null;
             }
-            return bindThis(then, value);
+            return Helpers.bindThis(then, value);
         }
         Helpers.getThenFunction = getThenFunction;
         function tryCatch(tryBlock, catchBlock) {
@@ -63,9 +63,9 @@ var Welsh;
 "use strict";
 var Welsh;
 (function (Welsh) {
+    var slice = Array.prototype.slice;
     var tryCatch = Welsh.Helpers.tryCatch;
     var getThenFunction = Welsh.Helpers.getThenFunction;
-    var slice = Array.prototype.slice;
     (function (State) {
         State[State["fulfilledState"] = 1] = "fulfilledState";
         State[State["rejectedState"] = 2] = "rejectedState";
