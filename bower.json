@@ -27,9 +27,10 @@
     "index.ts",
     "package.json",
     "typings",
-    "lib/*.ts",
+    "lib",
     "tsd.json",
-    "tsconfig.json"
+    "tsconfig.json",
+    "dist/welsh-node.js"
   ],
   "dependencies": { },
   "devDependencies": { }
