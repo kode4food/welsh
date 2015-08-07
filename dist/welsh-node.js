@@ -37,20 +37,6 @@ var Welsh;
             return Helpers.bindThis(then, value);
         }
         Helpers.getThenFunction = getThenFunction;
-        function tryCatch(tryBlock, catchBlock) {
-            if (typeof tryBlock !== 'function') {
-                return;
-            }
-            try {
-                return tryBlock();
-            }
-            catch (err) {
-                if (typeof catchBlock === 'function') {
-                    return catchBlock(err);
-                }
-            }
-        }
-        Helpers.tryCatch = tryCatch;
     })(Helpers = Welsh.Helpers || (Welsh.Helpers = {}));
 })(Welsh || (Welsh = {}));
 /// <reference path="./Helpers.ts"/>
@@ -58,7 +44,6 @@ var Welsh;
 var Welsh;
 (function (Welsh) {
     var slice = Array.prototype.slice;
-    var tryCatch = Welsh.Helpers.tryCatch;
     var getThenFunction = Welsh.Helpers.getThenFunction;
     (function (State) {
         State[State["Fulfilled"] = 1] = "Fulfilled";
@@ -77,11 +62,19 @@ var Welsh;
         Common.prototype.finally = function (onFinally) {
             return this.then(wrappedFulfilled, wrappedRejected);
             function wrappedFulfilled(result) {
-                tryCatch(onFinally);
+                try {
+                    onFinally();
+                }
+                catch (err) {
+                }
                 return result;
             }
             function wrappedRejected(reason) {
-                tryCatch(onFinally);
+                try {
+                    onFinally();
+                }
+                catch (err) {
+                }
                 throw reason;
             }
         };

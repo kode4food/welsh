@@ -37,18 +37,4 @@ namespace Welsh.Helpers {
     }
     return bindThis(then, value);
   }
-
-  export function tryCatch(tryBlock: Function, catchBlock?: Function) {
-    if ( typeof tryBlock !== 'function' ) {
-      return;
-    }
-    try {
-      return tryBlock();
-    }
-    catch ( err ) {
-      if ( typeof catchBlock === 'function' ) {
-        return catchBlock(err);
-      }
-    }
-  }
 }

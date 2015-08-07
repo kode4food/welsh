@@ -13,7 +13,6 @@
 namespace Welsh {
   var slice = Array.prototype.slice;
 
-  import tryCatch = Helpers.tryCatch;
   import getThenFunction = Helpers.getThenFunction;
 
   export type Result = Thenable | any;
@@ -55,12 +54,20 @@ namespace Welsh {
       return this.then(wrappedFulfilled, wrappedRejected);
 
       function wrappedFulfilled(result?: Result) {
-        tryCatch(onFinally);
+        try {
+          onFinally();
+        }
+        catch ( err ) {
+        }
         return result;
       }
 
       function wrappedRejected(reason?: Reason) {
-        tryCatch(onFinally);
+        try {
+          onFinally();
+        }
+        catch ( err ) {
+        }
         throw reason;
       }
     }
