@@ -19,7 +19,6 @@ namespace Welsh {
   function noOp() {}
 
   export class Promise extends Common {
-    private _state: State;
     private _settledResult: ResultOrReason;
     private _branched: boolean;
     private _pendingHandlers: Function[] | Function[][];
@@ -34,7 +33,7 @@ namespace Welsh {
         this.reject(new Error("Promise requires an Executor Function"));
         return;
       }
-      
+
       this.doResolve(executor);
     }
 

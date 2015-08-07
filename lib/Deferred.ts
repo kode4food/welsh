@@ -15,7 +15,6 @@ namespace Welsh {
   import getThenFunction = Helpers.getThenFunction;
 
   export class Deferred extends Common {
-    private _state: State;
     private _running: boolean;
     private _pendingResult: ResultOrReason;
     private _pendingHandlers: Function[][] = [];

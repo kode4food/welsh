@@ -38,9 +38,9 @@ describe("Welsh Deferreds", function () {
   });
 
   it("should handle exceptions", function (done) {
-    var p = welsh.Deferred.reject("an error!");
+    var d = welsh.Deferred.reject("an error!");
 
-    p.catch(function (err) {
+    d.catch(function (err) {
       expect(err).to.equal("an error!");
       return 'totally ' + err;
     }).then(function (result) {
@@ -53,9 +53,9 @@ describe("Welsh Deferreds", function () {
   });
 
   it("should handle returned Deferreds that reject", function (done) {
-    var p = welsh.Deferred.reject("an error!");
+    var d = welsh.Deferred.reject("an error!");
 
-    p.catch(function (err) {
+    d.catch(function (err) {
       expect(err).to.equal("an error!");
       throw 'totally ' + err;
     }).catch(function (result) {
@@ -72,8 +72,8 @@ describe("Welsh Deferreds", function () {
   });
 
   it("should accept values before 'then'", function (done) {
-    var p = welsh.Deferred.resolve('hello');
-    p.then(function (result) {
+    var d = welsh.Deferred.resolve('hello');
+    d.then(function (result) {
       expect(result).to.equal('hello');
       done();
     });
@@ -82,11 +82,11 @@ describe("Welsh Deferreds", function () {
   it("should not re-enter if you re-resolve", function (done) {
     var resolve;
     var count = 0;
-    var p = new welsh.Deferred(function (_resolve) {
+    var d = new welsh.Deferred(function (_resolve) {
       resolve = _resolve;
     });
 
-    p.then(function (result) {
+    d.then(function (result) {
       expect(++count).to.equal(1);
       expect(result).to.equal('hello');
 
@@ -95,7 +95,7 @@ describe("Welsh Deferreds", function () {
           resolve('uh-oh!');
         }).to.not.throw();
 
-        p.then(function(result) {
+        d.then(function(result) {
           expect(result).to.equal('hello there');
           done();
         });
@@ -109,22 +109,22 @@ describe("Welsh Deferreds", function () {
 
   it("should be able to continue", function (done) {
     var resolve;
-    var p = new welsh.Deferred(function (_resolve) {
+    var d = new welsh.Deferred(function (_resolve) {
       resolve = _resolve;
     });
 
-    p.then(function (result) {
+    d.then(function (result) {
       expect(result).to.equal('Bob');
       return "Hello, " + result + "!";
     });
 
     resolve('Bob');
-    p.then(function (result) {
+    d.then(function (result) {
       expect(result).to.equal('Hello, Bob!');
       return result + ' ***';
     });
 
-    p.then(function (result) {
+    d.then(function (result) {
       expect(result).to.equal('Hello, Bob! ***');
       done();
     });
@@ -132,13 +132,13 @@ describe("Welsh Deferreds", function () {
 
   it("should allow re-entrant 'then'", function (done) {
     var resolve;
-    var r, p = new welsh.Deferred(function (_resolve) {
+    var d = new welsh.Deferred(function (_resolve) {
       resolve = _resolve;
     });
 
-    p.then(function (result) {
+    d.then(function (result) {
       expect(result).to.equal('Bill');
-      p.then(function (result) {
+      d.then(function (result) {
         expect(result).to.equal("Hello, Bill! How are you?");
         return result + " I'm fine!";
       });
@@ -150,7 +150,7 @@ describe("Welsh Deferreds", function () {
 
     resolve('Bill');
     setTimeout(function () {
-      p.then(function (result) {
+      d.then(function (result) {
         expect(result).to.equal("Hello, Bill! How are you? I'm fine!");
         done();
       });
@@ -172,5 +172,28 @@ describe("Welsh Deferreds", function () {
       expect(reason.message).to.contain("requires an Executor Function");
       done();
     });
+  });
+
+
+  it("should allow state querying", function (done) {
+    var d = welsh.Deferred.resolve('hello');
+    expect(d.isSettled()).to.be.true;
+    expect(d.isFulfilled()).to.be.true;
+    expect(d.isRejected()).to.be.false;
+    expect(d.isPending()).to.be.false;
+
+    d = welsh.Deferred.reject('rejected!');
+    expect(d.isSettled()).to.be.true;
+    expect(d.isFulfilled()).to.be.false;
+    expect(d.isRejected()).to.be.true;
+    expect(d.isPending()).to.be.false;
+
+    d = new welsh.Deferred(function () {});
+    expect(d.isSettled()).to.be.false;
+    expect(d.isFulfilled()).to.be.false;
+    expect(d.isRejected()).to.be.false;
+    expect(d.isPending()).to.be.true;
+
+    done();
   });
 });

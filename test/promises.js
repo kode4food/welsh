@@ -164,4 +164,26 @@ describe("Welsh Promises", function () {
       done();
     });
   });
+
+  it("should allow state querying", function (done) {
+    var p = welsh.Promise.resolve('hello');
+    expect(p.isSettled()).to.be.true;
+    expect(p.isFulfilled()).to.be.true;
+    expect(p.isRejected()).to.be.false;
+    expect(p.isPending()).to.be.false;
+
+    p = welsh.Promise.reject('rejected!');
+    expect(p.isSettled()).to.be.true;
+    expect(p.isFulfilled()).to.be.false;
+    expect(p.isRejected()).to.be.true;
+    expect(p.isPending()).to.be.false;
+
+    p = new welsh.Promise(function () {});
+    expect(p.isSettled()).to.be.false;
+    expect(p.isFulfilled()).to.be.false;
+    expect(p.isRejected()).to.be.false;
+    expect(p.isPending()).to.be.true;
+
+    done();
+  });
 });

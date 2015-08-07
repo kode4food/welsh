@@ -53,6 +53,18 @@ var Welsh;
     var Common = (function () {
         function Common(executor) {
         }
+        Common.prototype.isPending = function () {
+            return !this._state;
+        };
+        Common.prototype.isSettled = function () {
+            return !!this._state;
+        };
+        Common.prototype.isFulfilled = function () {
+            return this._state === State.Fulfilled;
+        };
+        Common.prototype.isRejected = function () {
+            return this._state === State.Rejected;
+        };
         Common.prototype.then = function (onFulfilled, onRejected) {
             throw new Error("Not implemented");
         };

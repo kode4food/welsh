@@ -38,19 +38,37 @@ namespace Welsh {
   }
 
   export class Common implements Thenable {
+    protected _state: State;
+
     constructor(executor: Executor) {
       // no-op
     }
 
-    then(onFulfilled?: Resolver, onRejected?: Rejecter): Common {
+    public isPending(): boolean {
+      return !this._state;
+    }
+
+    public isSettled(): boolean {
+      return !!this._state;
+    }
+
+    public isFulfilled(): boolean {
+      return this._state === State.Fulfilled;
+    }
+
+    public isRejected(): boolean {
+      return this._state === State.Rejected;
+    }
+
+    public then(onFulfilled?: Resolver, onRejected?: Rejecter): Common {
       throw new Error("Not implemented");
     }
 
-    catch(onRejected?: Rejecter): Common {
+    public catch(onRejected?: Rejecter): Common {
       return this.then(undefined, onRejected);
     }
 
-    finally(onFinally?: Finalizer): Common {
+    public finally(onFinally?: Finalizer): Common {
       return this.then(wrappedFulfilled, wrappedRejected);
 
       function wrappedFulfilled(result?: Result) {
@@ -72,7 +90,7 @@ namespace Welsh {
       }
     }
 
-    toNode(callback: NodeCallback): Common {
+    public toNode(callback: NodeCallback): Common {
       return this.then(wrappedFulfilled, wrappedRejected);
 
       function wrappedFulfilled(result?: Result) {
@@ -94,11 +112,11 @@ namespace Welsh {
       }
     }
 
-    toPromise(): Common {
+    public toPromise(): Common {
       return convertUsing(this, Welsh.Promise);
     }
 
-    toDeferred(): Common {
+    public toDeferred(): Common {
       return convertUsing(this, Welsh.Deferred);
     }
 
