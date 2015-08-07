@@ -16,6 +16,8 @@ namespace Welsh {
   import getThenFunction = Helpers.getThenFunction;
   import queueCall = Queue.queueCall;
 
+  function noOp() {}
+
   export class Promise extends Common {
     private _state: State;
     private _settledResult: ResultOrReason;
@@ -25,10 +27,14 @@ namespace Welsh {
     constructor(executor: Executor) {
       super(executor);
 
-      if ( typeof executor !== 'function' ) {
+      if ( executor === noOp ) {
+        return;
+      }
+      else if ( typeof executor !== 'function' ) {
         this.reject(new Error("Promise requires an Executor Function"));
         return;
       }
+      
       this.doResolve(executor);
     }
 
@@ -96,37 +102,33 @@ namespace Welsh {
     }
 
     public then(onFulfilled?: Resolver, onRejected?: Rejecter): Promise {
-      var resolve: Resolver;
-      var reject: Rejecter;
+      var promise = new Promise(noOp);
       this.addPending(fulfilledHandler, rejectedHandler);
-      return new Promise(function (_resolve, _reject) {
-        resolve = _resolve;
-        reject = _reject;
-      });
+      return promise;
 
       function fulfilledHandler(result?: Result) {
         if ( typeof onFulfilled !== 'function' ) {
-          resolve(result);
+          promise.resolve(result);
           return;
         }
         try {
-          resolve(onFulfilled(result));
+          promise.resolve(onFulfilled(result));
         }
         catch ( err ) {
-          reject(err);
+          promise.reject(err);
         }
       }
 
       function rejectedHandler(reason?: Reason) {
         if ( typeof onRejected !== 'function' ) {
-          reject(reason);
+          promise.reject(reason);
           return;
         }
         try {
-          resolve(onRejected(reason));
+          promise.resolve(onRejected(reason));
         }
         catch ( err ) {
-          reject(err);
+          promise.reject(err);
         }
       }
     }

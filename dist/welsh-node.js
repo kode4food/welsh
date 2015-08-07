@@ -279,11 +279,15 @@ var Welsh;
 (function (Welsh) {
     var getThenFunction = Welsh.Helpers.getThenFunction;
     var queueCall = Welsh.Queue.queueCall;
+    function noOp() { }
     var Promise = (function (_super) {
         __extends(Promise, _super);
         function Promise(executor) {
             _super.call(this, executor);
-            if (typeof executor !== 'function') {
+            if (executor === noOp) {
+                return;
+            }
+            else if (typeof executor !== 'function') {
                 this.reject(new Error("Promise requires an Executor Function"));
                 return;
             }
@@ -349,35 +353,31 @@ var Welsh;
             }
         };
         Promise.prototype.then = function (onFulfilled, onRejected) {
-            var resolve;
-            var reject;
+            var promise = new Promise(noOp);
             this.addPending(fulfilledHandler, rejectedHandler);
-            return new Promise(function (_resolve, _reject) {
-                resolve = _resolve;
-                reject = _reject;
-            });
+            return promise;
             function fulfilledHandler(result) {
                 if (typeof onFulfilled !== 'function') {
-                    resolve(result);
+                    promise.resolve(result);
                     return;
                 }
                 try {
-                    resolve(onFulfilled(result));
+                    promise.resolve(onFulfilled(result));
                 }
                 catch (err) {
-                    reject(err);
+                    promise.reject(err);
                 }
             }
             function rejectedHandler(reason) {
                 if (typeof onRejected !== 'function') {
-                    reject(reason);
+                    promise.reject(reason);
                     return;
                 }
                 try {
-                    resolve(onRejected(reason));
+                    promise.resolve(onRejected(reason));
                 }
                 catch (err) {
-                    reject(err);
+                    promise.reject(err);
                 }
             }
         };
