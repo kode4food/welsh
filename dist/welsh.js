@@ -67,8 +67,8 @@ var Welsh;
     var tryCatch = Welsh.Helpers.tryCatch;
     var getThenFunction = Welsh.Helpers.getThenFunction;
     (function (State) {
-        State[State["fulfilledState"] = 1] = "fulfilledState";
-        State[State["rejectedState"] = 2] = "rejectedState";
+        State[State["Fulfilled"] = 1] = "Fulfilled";
+        State[State["Rejected"] = 2] = "Rejected";
     })(Welsh.State || (Welsh.State = {}));
     var State = Welsh.State;
     var Common = (function () {
@@ -317,7 +317,7 @@ var Welsh;
                     this.doResolve(then);
                     return;
                 }
-                this._state = Welsh.State.fulfilledState;
+                this._state = Welsh.State.Fulfilled;
                 this._settledResult = result;
                 queueCall(function () { _this.notifyPending(); });
             }
@@ -330,7 +330,7 @@ var Welsh;
             if (this._state) {
                 return;
             }
-            this._state = Welsh.State.rejectedState;
+            this._state = Welsh.State.Rejected;
             this._settledResult = reason;
             queueCall(function () { _this.notifyPending(); });
         };
@@ -399,7 +399,7 @@ var Welsh;
             var state = this._state;
             if (state) {
                 var callback;
-                if (state === Welsh.State.fulfilledState) {
+                if (state === Welsh.State.Fulfilled) {
                     callback = onFulfilled;
                 }
                 else {
@@ -467,10 +467,10 @@ var Welsh;
                 reject(err);
             }
             function resolve(result) {
-                self.start(Welsh.State.fulfilledState, result);
+                self.start(Welsh.State.Fulfilled, result);
             }
             function reject(reason) {
-                self.start(Welsh.State.rejectedState, reason);
+                self.start(Welsh.State.Rejected, reason);
             }
         }
         Deferred.prototype.start = function (newState, result) {
@@ -511,11 +511,11 @@ var Welsh;
                 if (typeof callback === 'function') {
                     try {
                         result = callback(result);
-                        state = Welsh.State.fulfilledState;
+                        state = Welsh.State.Fulfilled;
                     }
                     catch (reason) {
                         result = reason;
-                        state = Welsh.State.rejectedState;
+                        state = Welsh.State.Rejected;
                     }
                 }
             } while (true);
@@ -525,12 +525,12 @@ var Welsh;
             this._state = state;
             this._running = false;
             function fulfilledLinker(result) {
-                self._state = Welsh.State.fulfilledState;
+                self._state = Welsh.State.Fulfilled;
                 self.proceed(result);
                 return result;
             }
             function rejectedLinker(reason) {
-                self._state = Welsh.State.rejectedState;
+                self._state = Welsh.State.Rejected;
                 self.proceed(reason);
                 throw reason;
             }

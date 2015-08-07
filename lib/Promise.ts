@@ -46,7 +46,7 @@ namespace Welsh {
           this.doResolve(then);
           return;
         }
-        this._state = State.fulfilledState;
+        this._state = State.Fulfilled;
         this._settledResult = result;
         queueCall(() => { this.notifyPending(); });
       }
@@ -59,7 +59,7 @@ namespace Welsh {
       if ( this._state ) {
         return;
       }
-      this._state = State.rejectedState;
+      this._state = State.Rejected;
       this._settledResult = reason;
       queueCall(() => { this.notifyPending(); });
     }
@@ -135,7 +135,7 @@ namespace Welsh {
       var state = this._state;
       if ( state ) {
         var callback: Function;
-        if ( state === State.fulfilledState ) {
+        if ( state === State.Fulfilled ) {
           callback = onFulfilled;
         }
         else {

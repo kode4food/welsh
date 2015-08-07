@@ -26,8 +26,8 @@ namespace Welsh {
   export type NodeCallback = (err: any, arg?: any) => void;
 
   export enum State {
-    fulfilledState = 1,
-    rejectedState = 2
+    Fulfilled = 1,
+    Rejected = 2
   }
 
   export interface Thenable {

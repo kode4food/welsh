@@ -38,11 +38,11 @@ namespace Welsh {
       }
 
       function resolve(result?: Result) {
-        self.start(State.fulfilledState, result);
+        self.start(State.Fulfilled, result);
       }
 
       function reject(reason?: Reason) {
-        self.start(State.rejectedState, reason);
+        self.start(State.Rejected, reason);
       }
     }
 
@@ -90,11 +90,11 @@ namespace Welsh {
         if ( typeof callback === 'function' ) {
           try {
             result = callback(result);
-            state = State.fulfilledState;
+            state = State.Fulfilled;
           }
           catch ( reason ) {
             result = reason;
-            state = State.rejectedState;
+            state = State.Rejected;
           }
         }
       }
@@ -106,13 +106,13 @@ namespace Welsh {
       this._running = false;
 
       function fulfilledLinker(result?: Result) {
-        self._state = State.fulfilledState;
+        self._state = State.Fulfilled;
         self.proceed(result);
         return result;
       }
 
       function rejectedLinker(reason?: Reason) {
-        self._state = State.rejectedState;
+        self._state = State.Rejected;
         self.proceed(reason);
         throw reason;
       }
