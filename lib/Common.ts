@@ -57,18 +57,18 @@ namespace Welsh {
         try {
           onFinally();
         }
-        catch ( err ) {
+        finally {
+          return result;
         }
-        return result;
       }
 
       function wrappedRejected(reason?: Reason) {
         try {
           onFinally();
         }
-        catch ( err ) {
+        finally {
+          throw reason;
         }
-        throw reason;
       }
     }
 

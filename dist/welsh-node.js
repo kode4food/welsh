@@ -65,17 +65,17 @@ var Welsh;
                 try {
                     onFinally();
                 }
-                catch (err) {
+                finally {
+                    return result;
                 }
-                return result;
             }
             function wrappedRejected(reason) {
                 try {
                     onFinally();
                 }
-                catch (err) {
+                finally {
+                    throw reason;
                 }
-                throw reason;
             }
         };
         Common.prototype.toNode = function (callback) {
