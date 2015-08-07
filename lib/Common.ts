@@ -16,7 +16,7 @@ namespace Welsh {
   import tryCatch = Helpers.tryCatch;
   import getThenFunction = Helpers.getThenFunction;
 
-  export type Result = any;
+  export type Result = Thenable | any;
   export type Reason = any;
   export type ResultOrReason = Result | Reason;
   export type Resolver = (result?: Result) => void;

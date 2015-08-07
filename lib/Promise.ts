@@ -20,7 +20,7 @@ namespace Welsh {
     private _state: State;
     private _settledResult: ResultOrReason;
     private _branched: boolean;
-    private _pendingHandlers: any;
+    private _pendingHandlers: Function[] | Function[][];
 
     constructor(executor: Executor) {
       super(executor);
@@ -172,11 +172,11 @@ namespace Welsh {
       var settledResult = this._settledResult;
       if ( this._branched ) {
         for ( var i = 0, len = pendingHandlers.length; i < len; i++ ) {
-          pendingHandlers[i][state](settledResult);
+          (<Function[][]>pendingHandlers)[i][state](settledResult);
         }
       }
       else {
-        pendingHandlers[state](settledResult);
+        (<Function[]>pendingHandlers)[state](settledResult);
       }
       this._pendingHandlers = null;
       this._branched = false;
