@@ -40,13 +40,6 @@ var Welsh;
     })(Helpers = Welsh.Helpers || (Welsh.Helpers = {}));
 })(Welsh || (Welsh = {}));
 /// <reference path="./Helpers.ts"/>
-/*
- * Welsh (Promises, but not really)
- * Licensed under the MIT License
- * see LICENSE.md
- *
- * @author Thomas S. Bradford (kode4food.it)
- */
 "use strict";
 var Welsh;
 (function (Welsh) {
@@ -55,23 +48,35 @@ var Welsh;
     (function (State) {
         State[State["Fulfilled"] = 1] = "Fulfilled";
         State[State["Rejected"] = 2] = "Rejected";
+        State[State["Resolving"] = 3] = "Resolving";
     })(Welsh.State || (Welsh.State = {}));
     var State = Welsh.State;
     var Common = (function () {
         function Common(executor) {
-            // no-op
         }
         Common.prototype.isPending = function () {
-            return !this._state;
+            return !(this._state && this._state !== State.Resolving);
         };
         Common.prototype.isSettled = function () {
-            return !!this._state;
+            return !!(this._state && this._state !== State.Resolving);
         };
         Common.prototype.isFulfilled = function () {
             return this._state === State.Fulfilled;
         };
         Common.prototype.isRejected = function () {
             return this._state === State.Rejected;
+        };
+        Common.prototype.getResult = function () {
+            if (this._state === State.Fulfilled) {
+                return this._result;
+            }
+            throw new Error("Can't retrieve result if not fulfilled");
+        };
+        Common.prototype.getReason = function () {
+            if (this._state === State.Rejected) {
+                return this._result;
+            }
+            throw new Error("Can't retrieve reason if not rejected");
         };
         Common.prototype.then = function (onFulfilled, onRejected) {
             throw new Error("Not implemented");
@@ -124,6 +129,9 @@ var Welsh;
             return convertUsing(this, Welsh.Deferred);
         };
         Common.resolve = function (result) {
+            if (result instanceof this) {
+                return result;
+            }
             return new this(function (resolve) {
                 resolve(result);
             });
@@ -288,13 +296,6 @@ var Welsh;
 /// <reference path="./Helpers.ts"/>
 /// <reference path="./Common.ts"/>
 /// <reference path="./Queue.ts"/>
-/*
- * Welsh (Promises, but not really)
- * Licensed under the MIT License
- * see LICENSE.md
- *
- * @author Thomas S. Bradford (kode4food.it)
- */
 "use strict";
 var __extends = (this && this.__extends) || function (d, b) {
     for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p];
@@ -336,7 +337,7 @@ var Welsh;
                     return;
                 }
                 this._state = Welsh.State.Fulfilled;
-                this._settledResult = result;
+                this._result = result;
                 queueCall(function () { _this.notifyPending(); });
             }
             catch (err) {
@@ -349,7 +350,7 @@ var Welsh;
                 return;
             }
             this._state = Welsh.State.Rejected;
-            this._settledResult = reason;
+            this._result = reason;
             queueCall(function () { _this.notifyPending(); });
         };
         Promise.prototype.doResolve = function (executor) {
@@ -419,7 +420,7 @@ var Welsh;
                 else {
                     callback = onRejected;
                 }
-                queueCall(function () { callback(_this._settledResult); });
+                queueCall(function () { callback(_this._result); });
                 return;
             }
             var item = [undefined, onFulfilled, onRejected];
@@ -441,7 +442,7 @@ var Welsh;
                 return;
             }
             var state = this._state;
-            var settledResult = this._settledResult;
+            var settledResult = this._result;
             if (this._branched) {
                 for (var i = 0, len = pendingHandlers.length; i < len; i++) {
                     pendingHandlers[i][state](settledResult);
@@ -459,13 +460,6 @@ var Welsh;
 })(Welsh || (Welsh = {}));
 /// <reference path="./Helpers.ts"/>
 /// <reference path="./Common.ts"/>
-/*
- * Welsh (Promises, but not really)
- * Licensed under the MIT License
- * see LICENSE.md
- *
- * @author Thomas S. Bradford (kode4food.it)
- */
 "use strict";
 var Welsh;
 (function (Welsh) {
@@ -507,7 +501,7 @@ var Welsh;
                 undefined, onFulfilled, onRejected
             ];
             if (this._state && !this._running) {
-                this.proceed(this._pendingResult);
+                this.proceed(this._result);
             }
             return this;
         };
@@ -520,7 +514,7 @@ var Welsh;
                 var then = getThenFunction(result);
                 if (then) {
                     this._pendingIndex = pendingIndex;
-                    this._state = state;
+                    this._state = Welsh.State.Resolving;
                     var self = this;
                     then(fulfilledLinker, rejectedLinker);
                     return;
@@ -540,7 +534,7 @@ var Welsh;
                     }
                 }
             } while (true);
-            this._pendingResult = result;
+            this._result = result;
             this._pendingHandlers = [];
             this._pendingIndex = 0;
             this._state = state;
@@ -562,13 +556,6 @@ var Welsh;
 })(Welsh || (Welsh = {}));
 /// <reference path="./Promise.ts"/>
 /// <reference path="./Deferred.ts"/>
-/*
- * Welsh (Promises, but not really)
- * Licensed under the MIT License
- * see LICENSE.md
- *
- * @author Thomas S. Bradford (kode4food.it)
- */
 "use strict";
 /// <reference path="./typings/node/node.d.ts"/>
 /// <reference path="./lib/Welsh.ts"/>

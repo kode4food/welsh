@@ -16,7 +16,6 @@ namespace Welsh {
 
   export class Deferred extends Common {
     private _running: boolean;
-    private _pendingResult: ResultOrReason;
     private _pendingHandlers: Function[][] = [];
     private _pendingIndex = 0;
 
@@ -60,7 +59,7 @@ namespace Welsh {
       ];
 
       if ( this._state && !this._running ) {
-        this.proceed(this._pendingResult);
+        this.proceed(this._result);
       }
       return this;
     }
@@ -75,7 +74,7 @@ namespace Welsh {
         var then = getThenFunction(result);
         if ( then ) {
           this._pendingIndex = pendingIndex;
-          this._state = state;
+          this._state = State.Resolving;
           var self = this;
           then(fulfilledLinker, rejectedLinker);
           return;
@@ -98,7 +97,7 @@ namespace Welsh {
         }
       }
       while ( true );
-      this._pendingResult = result;
+      this._result = result;
       this._pendingHandlers = [];
       this._pendingIndex = 0;
       this._state = state;

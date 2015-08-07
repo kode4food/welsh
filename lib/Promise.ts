@@ -19,7 +19,6 @@ namespace Welsh {
   function noOp() {}
 
   export class Promise extends Common {
-    private _settledResult: ResultOrReason;
     private _branched: boolean;
     private _pendingHandlers: Function[] | Function[][];
 
@@ -52,7 +51,7 @@ namespace Welsh {
           return;
         }
         this._state = State.Fulfilled;
-        this._settledResult = result;
+        this._result = result;
         queueCall(() => { this.notifyPending(); });
       }
       catch ( err ) {
@@ -65,7 +64,7 @@ namespace Welsh {
         return;
       }
       this._state = State.Rejected;
-      this._settledResult = reason;
+      this._result = reason;
       queueCall(() => { this.notifyPending(); });
     }
 
@@ -143,7 +142,7 @@ namespace Welsh {
           callback = onRejected;
         }
 
-        queueCall(() => { callback(this._settledResult); });
+        queueCall(() => { callback(this._result); });
         return;
       }
 
@@ -170,7 +169,7 @@ namespace Welsh {
         return;
       }
       var state = this._state;
-      var settledResult = this._settledResult;
+      var settledResult = this._result;
       if ( this._branched ) {
         for ( var i = 0, len = pendingHandlers.length; i < len; i++ ) {
           (<Function[][]>pendingHandlers)[i][state](settledResult);

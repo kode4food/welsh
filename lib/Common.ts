@@ -26,7 +26,8 @@ namespace Welsh {
 
   export enum State {
     Fulfilled = 1,
-    Rejected = 2
+    Rejected = 2,
+    Resolving = 3
   }
 
   export interface Thenable {
@@ -39,17 +40,18 @@ namespace Welsh {
 
   export class Common implements Thenable {
     protected _state: State;
+    protected _result: ResultOrReason;
 
     constructor(executor: Executor) {
       // no-op
     }
 
     public isPending(): boolean {
-      return !this._state;
+      return !(this._state && this._state !== State.Resolving);
     }
 
     public isSettled(): boolean {
-      return !!this._state;
+      return !!(this._state && this._state !== State.Resolving);
     }
 
     public isFulfilled(): boolean {
@@ -58,6 +60,20 @@ namespace Welsh {
 
     public isRejected(): boolean {
       return this._state === State.Rejected;
+    }
+
+    public getResult(): Result {
+      if ( this._state === State.Fulfilled ) {
+        return this._result;
+      }
+      throw new Error("Can't retrieve result if not fulfilled");
+    }
+
+    public getReason(): Reason {
+      if ( this._state === State.Rejected ) {
+        return this._result;
+      }
+      throw new Error("Can't retrieve reason if not rejected");
     }
 
     public then(onFulfilled?: Resolver, onRejected?: Rejecter): Common {
@@ -121,6 +137,9 @@ namespace Welsh {
     }
 
     static resolve(result?: Result): Common {
+      if ( result instanceof this ) {
+        return result;
+      }
       return new this(function (resolve) {
         resolve(result);
       });

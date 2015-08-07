@@ -171,19 +171,32 @@ describe("Welsh Promises", function () {
     expect(p.isFulfilled()).to.be.true;
     expect(p.isRejected()).to.be.false;
     expect(p.isPending()).to.be.false;
+    expect(p.getResult()).to.equal('hello');
+    expect(function () { p.getReason(); }).to.throw.Error;
 
     p = welsh.Promise.reject('rejected!');
     expect(p.isSettled()).to.be.true;
     expect(p.isFulfilled()).to.be.false;
     expect(p.isRejected()).to.be.true;
     expect(p.isPending()).to.be.false;
+    expect(p.getReason()).to.equal('rejected!');
+    expect(function () { p.getResult(); }).to.throw.Error;
 
     p = new welsh.Promise(function () {});
     expect(p.isSettled()).to.be.false;
     expect(p.isFulfilled()).to.be.false;
     expect(p.isRejected()).to.be.false;
     expect(p.isPending()).to.be.true;
+    expect(function () { p.getResult(); }).to.throw.Error;
+    expect(function () { p.getReason(); }).to.throw.Error;
 
+    done();
+  });
+
+  it("should resolve to self on a Welsh Promise", function (done) {
+    var p1 = new welsh.Promise();
+    var p2 = welsh.Promise.resolve(p1);
+    expect(p1).to.equal(p2);
     done();
   });
 });

@@ -174,25 +174,30 @@ describe("Welsh Deferreds", function () {
     });
   });
 
-
   it("should allow state querying", function (done) {
     var d = welsh.Deferred.resolve('hello');
     expect(d.isSettled()).to.be.true;
     expect(d.isFulfilled()).to.be.true;
     expect(d.isRejected()).to.be.false;
     expect(d.isPending()).to.be.false;
+    expect(d.getResult()).to.equal('hello');
+    expect(function () { d.getReason(); }).to.throw.Error;
 
     d = welsh.Deferred.reject('rejected!');
     expect(d.isSettled()).to.be.true;
     expect(d.isFulfilled()).to.be.false;
     expect(d.isRejected()).to.be.true;
     expect(d.isPending()).to.be.false;
+    expect(d.getReason()).to.equal('rejected!');
+    expect(function () { d.getResult(); }).to.throw.Error;
 
     d = new welsh.Deferred(function () {});
     expect(d.isSettled()).to.be.false;
     expect(d.isFulfilled()).to.be.false;
     expect(d.isRejected()).to.be.false;
     expect(d.isPending()).to.be.true;
+    expect(function () { d.getResult(); }).to.throw.Error;
+    expect(function () { d.getReason(); }).to.throw.Error;
 
     done();
   });

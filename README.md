@@ -90,7 +90,7 @@ new welsh.Deferred(function (resolve, reject) {
 
 The Promise or Deferred that is returned will be an Object that contains several Function properties.  Most of these should be familiar.  They are:
 
-`isPending()` - Returns whether or not the Promise or Deferred is still in a pending state.
+`isPending()` - Returns whether or not the Promise or Deferred is currently in a pending state.
 
 `isSettled()` - Returns whether or not the Promise or Deferred is in a settled (non-pending) state.
 
@@ -101,6 +101,10 @@ The Promise or Deferred that is returned will be an Object that contains several
 `resolve(result?:any)` - Resolves the Promise or Deferred with the specified result.
 
 `reject(reason?:any)` - Rejects the Promise or Deferred with the specified reason.
+
+`getResult()` - Returns the Result of the Promise or Deferred if it has been fulfilled.  If it has not been fulfilled, an uncaught Error is thrown.
+
+`getReason()` - Returns the reason that the Promise or Deferred has been rejected, if it has been rejected.  If it has not been rejected, an uncaught Error is thrown.
 
 `then(onFulfilled?:Function, onRejected?:Function)` - In the case of a Promise, creates a Promise whose value depends on its parent. In the case of a Deferred, adds an onFulfilled and/or onRejected handler to the dispatch chain.
 
