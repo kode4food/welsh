@@ -44,7 +44,7 @@ namespace Welsh.Collection {
         if ( !isArray(result) ) {
           throw new TypeError("all() requires a Collection");
         }
-        var thenables = result.slice();
+        var thenables = slice.call(result);
         var waitingFor = thenables.length;
 
         for ( var i = 0, len = waitingFor; i < len; i++ ) {
