@@ -15,13 +15,12 @@ namespace Welsh.Collection {
   var slice = Array.prototype.slice;
 
   import getThenFunction = Helpers.getThenFunction;
-  import isArray = Helpers.isArray;
 
   export function createRace(instance: Common): Common {
     var Constructor = <CommonConstructable>instance.constructor;
     return new Constructor(function (resolve, reject) {
       instance.done(function (result?: Result) {
-        if ( !isArray(result) ) {
+        if ( !Array.isArray(result) ) {
           throw new TypeError("race() requires a Collection");
         }
         for ( var i = 0, len = result.length; i < len; i++ ) {
@@ -41,7 +40,7 @@ namespace Welsh.Collection {
     var Constructor = <CommonConstructable>instance.constructor;
     return new Constructor(function (resolve, reject) {
       instance.done(function (result?: Result) {
-        if ( !isArray(result) ) {
+        if ( !Array.isArray(result) ) {
           throw new TypeError("all() requires a Collection");
         }
         var thenables = slice.call(result);

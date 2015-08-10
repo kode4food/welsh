@@ -11,14 +11,11 @@ var Welsh;
     var Helpers;
     (function (Helpers) {
         var objectToString = Object.prototype.toString;
-        Helpers.isArray = (function () {
-            if (typeof Array.isArray === 'function') {
-                return Array.isArray;
-            }
-            return function (obj) {
+        if (!Array.isArray) {
+            Array.isArray = function (obj) {
                 return obj && objectToString.call(obj) === '[object Array]';
             };
-        });
+        }
         Helpers.bindThis = (function () {
             if (Function.prototype.bind) {
                 return function (func, thisVal) {
@@ -57,12 +54,11 @@ var Welsh;
     (function (Collection) {
         var slice = Array.prototype.slice;
         var getThenFunction = Welsh.Helpers.getThenFunction;
-        var isArray = Welsh.Helpers.isArray;
         function createRace(instance) {
             var Constructor = instance.constructor;
             return new Constructor(function (resolve, reject) {
                 instance.done(function (result) {
-                    if (!isArray(result)) {
+                    if (!Array.isArray(result)) {
                         throw new TypeError("race() requires a Collection");
                     }
                     for (var i = 0, len = result.length; i < len; i++) {
@@ -82,7 +78,7 @@ var Welsh;
             var Constructor = instance.constructor;
             return new Constructor(function (resolve, reject) {
                 instance.done(function (result) {
-                    if (!isArray(result)) {
+                    if (!Array.isArray(result)) {
                         throw new TypeError("all() requires a Collection");
                     }
                     var thenables = slice.call(result);
