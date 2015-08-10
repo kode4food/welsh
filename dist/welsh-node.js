@@ -49,12 +49,84 @@ var Welsh;
     })(Helpers = Welsh.Helpers || (Welsh.Helpers = {}));
 })(Welsh || (Welsh = {}));
 /// <reference path="./Helpers.ts"/>
+/// <reference path="./Common.ts"/>
+"use strict";
+var Welsh;
+(function (Welsh) {
+    var Collection;
+    (function (Collection) {
+        var slice = Array.prototype.slice;
+        var getThenFunction = Welsh.Helpers.getThenFunction;
+        var isArray = Welsh.Helpers.isArray;
+        function createRace(instance) {
+            var Constructor = instance.constructor;
+            return new Constructor(function (resolve, reject) {
+                instance.done(function (result) {
+                    if (!isArray(result)) {
+                        throw new TypeError("race() requires a Collection");
+                    }
+                    for (var i = 0, len = result.length; i < len; i++) {
+                        var value = result[i];
+                        var then = getThenFunction(value);
+                        if (then) {
+                            then(resolve, reject);
+                            continue;
+                        }
+                        resolve(value);
+                    }
+                }, reject);
+            });
+        }
+        Collection.createRace = createRace;
+        function createAll(instance) {
+            var Constructor = instance.constructor;
+            return new Constructor(function (resolve, reject) {
+                instance.done(function (result) {
+                    if (!isArray(result)) {
+                        throw new TypeError("all() requires a Collection");
+                    }
+                    var thenables = result.slice();
+                    var waitingFor = thenables.length;
+                    for (var i = 0, len = waitingFor; i < len; i++) {
+                        var then = getThenFunction(thenables[i]);
+                        if (then) {
+                            resolveThenAtIndex(then, i);
+                            continue;
+                        }
+                        waitingFor--;
+                    }
+                    if (!waitingFor) {
+                        resolve(thenables);
+                    }
+                    function resolveThenAtIndex(then, index) {
+                        then(wrappedResolve, wrappedReject);
+                        function wrappedResolve(result) {
+                            thenables[index] = result;
+                            if (!--waitingFor) {
+                                resolve(thenables);
+                            }
+                            return result;
+                        }
+                        function wrappedReject(reason) {
+                            reject(reason);
+                            throw reason;
+                        }
+                    }
+                }, reject);
+            });
+        }
+        Collection.createAll = createAll;
+    })(Collection = Welsh.Collection || (Welsh.Collection = {}));
+})(Welsh || (Welsh = {}));
+/// <reference path="./Helpers.ts"/>
+/// <reference path="./Collection.ts"/>
 "use strict";
 var Welsh;
 (function (Welsh) {
     var slice = Array.prototype.slice;
     var getThenFunction = Welsh.Helpers.getThenFunction;
-    var isArray = Welsh.Helpers.isArray;
+    var createRace = Welsh.Collection.createRace;
+    var createAll = Welsh.Collection.createAll;
     (function (State) {
         State[State["Fulfilled"] = 1] = "Fulfilled";
         State[State["Rejected"] = 2] = "Rejected";
@@ -142,62 +214,10 @@ var Welsh;
             return convertUsing(this, Welsh.Deferred);
         };
         Common.prototype.race = function () {
-            var _this = this;
-            var Constructor = this.constructor;
-            return new Constructor(function (resolve, reject) {
-                _this.done(function (result) {
-                    if (!isArray(result)) {
-                        throw new TypeError("race() requires an Array");
-                    }
-                    for (var i = 0, len = result.length; i < len; i++) {
-                        var value = result[i];
-                        var then = getThenFunction(value);
-                        if (then) {
-                            then(resolve, reject);
-                            continue;
-                        }
-                        resolve(value);
-                    }
-                }, reject);
-            });
+            return createRace(this);
         };
         Common.prototype.all = function () {
-            var _this = this;
-            var Constructor = this.constructor;
-            return new Constructor(function (resolve, reject) {
-                _this.done(function (result) {
-                    if (!isArray(result)) {
-                        throw new TypeError("all() requires an Array");
-                    }
-                    var thenables = result.slice();
-                    var waitingFor = thenables.length;
-                    for (var i = 0, len = waitingFor; i < len; i++) {
-                        var then = getThenFunction(thenables[i]);
-                        if (then) {
-                            resolveThenAtIndex(then, i);
-                            continue;
-                        }
-                        waitingFor--;
-                    }
-                    if (!waitingFor) {
-                        resolve(thenables);
-                    }
-                    function resolveThenAtIndex(then, index) {
-                        then(wrappedResolve, wrappedReject);
-                        function wrappedResolve(result) {
-                            thenables[index] = result;
-                            if (!--waitingFor) {
-                                resolve(thenables);
-                            }
-                            return result;
-                        }
-                        function wrappedReject(reason) {
-                            reject(reason);
-                            throw reason;
-                        }
-                    }
-                });
-            });
+            return createAll(this);
         };
         Common.resolve = function (result) {
             if (result instanceof this) {

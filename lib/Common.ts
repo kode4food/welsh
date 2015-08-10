@@ -1,4 +1,5 @@
 /// <reference path="./Helpers.ts"/>
+/// <reference path="./Collection.ts"/>
 
 /*
  * Welsh (Promises, but not really)
@@ -14,7 +15,8 @@ namespace Welsh {
   var slice = Array.prototype.slice;
 
   import getThenFunction = Helpers.getThenFunction;
-  import isArray = Helpers.isArray;
+  import createRace = Collection.createRace;
+  import createAll = Collection.createAll;
 
   export type Result = Thenable | any;
   export type Reason = any;
@@ -36,7 +38,7 @@ namespace Welsh {
     then(onFulfilled?: Resolver, onRejected?: Rejecter): Thenable;
   }
 
-  interface CommonConstructable {
+  export interface CommonConstructable {
     new(executor: Executor): Common;
   }
 
@@ -143,66 +145,11 @@ namespace Welsh {
     }
 
     public race(): Common {
-      var Constructor = <CommonConstructable>this.constructor;
-      return new Constructor((resolve, reject) => {
-        this.done(function (result?: Result) {
-          if ( !isArray(result) ) {
-            throw new TypeError("race() requires an Array");
-          }
-          for ( var i = 0, len = result.length; i < len; i++ ) {
-            var value = result[i];
-            var then = getThenFunction(value);
-            if ( then ) {
-              then(resolve, reject);
-              continue;
-            }
-            resolve(value);
-          }
-        }, reject);
-      });
+      return createRace(this);
     }
 
     public all(): Common {
-      var Constructor = <CommonConstructable>this.constructor;
-      return new Constructor((resolve, reject) => {
-        this.done(function (result?: Result) {
-          if ( !isArray(result) ) {
-            throw new TypeError("all() requires an Array");
-          }
-          var thenables = result.slice();
-          var waitingFor = thenables.length;
-
-          for ( var i = 0, len = waitingFor; i < len; i++ ) {
-            var then = getThenFunction(thenables[i]);
-            if ( then ) {
-              resolveThenAtIndex(then, i);
-              continue;
-            }
-            waitingFor--;
-          }
-
-          if ( !waitingFor ) {
-            resolve(thenables);
-          }
-
-          function resolveThenAtIndex(then: Function, index: number) {
-            then(wrappedResolve, wrappedReject);
-
-            function wrappedResolve(result?: Result) {
-              thenables[index] = result;
-              if ( !--waitingFor ) {
-                resolve(thenables);
-              }
-              return result;
-            }
-
-            function wrappedReject(reason?: Reason) {
-              reject(reason);
-              throw reason;
-            }
-          }
-        });
-      });
+      return createAll(this);
     }
 
     static resolve(result?: Result): Common {
