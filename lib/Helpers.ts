@@ -9,6 +9,17 @@
 "use strict";
 
 namespace Welsh.Helpers {
+  var objectToString = Object.prototype.toString;
+
+  export var isArray = (function () {
+    if ( typeof Array.isArray === 'function' ) {
+      return Array.isArray;
+    }
+    return function (obj: Object): boolean {
+      return obj && objectToString.call(obj) === '[object Array]';
+    };
+  });
+
   export var bindThis = (function () {
     if ( Function.prototype.bind ) {
       return function (func: Function, thisVal: Object) {

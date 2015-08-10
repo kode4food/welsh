@@ -13,6 +13,7 @@
 
 namespace Welsh {
   import getThenFunction = Helpers.getThenFunction;
+  import queueCall = Queue.queueCall;
 
   export class Deferred extends Common {
     private _running: boolean;
@@ -62,6 +63,36 @@ namespace Welsh {
         this.proceed(this._result);
       }
       return this;
+    }
+
+    public done(onFulfilled?: Resolver, onRejected?: Rejecter): void {
+      this.then(wrapFulfilled, wrapRejected);
+
+      function wrapFulfilled(result?: Result) {
+        if ( typeof onFulfilled !== 'function' ) {
+          return result;
+        }
+        try {
+          onFulfilled(result);
+        }
+        catch (err) {
+          queueCall(() => { throw err; });
+          return result;
+        }
+      }
+
+      function wrapRejected(reason?: Reason) {
+        if ( typeof onRejected !== 'function' ) {
+          throw reason;
+        }
+        try {
+          onRejected(reason);
+        }
+        catch (err) {
+          queueCall(() => { throw err; });
+          throw reason;
+        }
+      }
     }
 
     private proceed(result?: ResultOrReason) {

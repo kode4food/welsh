@@ -16,7 +16,7 @@ describe("Welsh 'all()' Implementation", function () {
       return result + ' modified';
     });
 
-    var all = welsh.Promise.all('hello', p1, p2, d1, d2, 37);
+    var all = welsh.Promise.all(['hello', p1, p2, d1, d2, 37]);
     all.then(function (arr) {
       expect(arr.length).to.equal(6);
       expect(arr[0]).to.equal('hello');
@@ -43,7 +43,7 @@ describe("Welsh 'all()' Implementation", function () {
       return result + ' modified';
     });
 
-    var all = welsh.Promise.all('hello', p1, p2, d1, d2, 37);
+    var all = welsh.Promise.all(['hello', p1, p2, d1, d2, 37]);
     all.then(undefined, function (reason) {
       expect(reason).to.equal('d1 rejected');
       done();
@@ -56,7 +56,7 @@ describe("Welsh 'all()' Implementation", function () {
   });
 
   it("should handle empty set", function (done) {
-    var all = welsh.Promise.all();
+    var all = welsh.Promise.all([]);
     all.then(function (result) {
       expect(result).is.array;
       expect(result).length.is(0);

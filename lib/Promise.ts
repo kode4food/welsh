@@ -101,7 +101,7 @@ namespace Welsh {
 
     public then(onFulfilled?: Resolver, onRejected?: Rejecter): Promise {
       var promise = new Promise(noOp);
-      this.addPending(fulfilledHandler, rejectedHandler);
+      this.done(fulfilledHandler, rejectedHandler);
       return promise;
 
       function fulfilledHandler(result?: Result) {
@@ -131,7 +131,7 @@ namespace Welsh {
       }
     }
 
-    private addPending(onFulfilled?: Resolver, onRejected?: Rejecter) {
+    public done(onFulfilled?: Resolver, onRejected?: Rejecter): void {
       var state = this._state;
       if ( state ) {
         var callback: Function;

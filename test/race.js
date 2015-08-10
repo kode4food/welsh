@@ -12,7 +12,7 @@ describe("Welsh 'race()' Implementation", function () {
     var d1_resolve, d1 = new welsh.Deferred(function (resolve) { d1_resolve = resolve; });
     var d2_resolve, d2 = new welsh.Deferred(function (resolve) { d2_resolve = resolve; });
 
-    var race = welsh.Promise.race(p1, p2, d1, d2);
+    var race = welsh.Promise.race([p1, p2, d1, d2]);
     race.then(function (result) {
       expect(result).to.equal('d1 resolved');
       done();
@@ -30,7 +30,7 @@ describe("Welsh 'race()' Implementation", function () {
     var d1_resolve, d1 = new welsh.Deferred(function (resolve) { d1_resolve = resolve; });
     var d2_resolve, d2 = new welsh.Deferred(function (resolve) { d2_resolve = resolve; });
 
-    var race = welsh.Deferred.race(p1, p2, d1, d2, 37);
+    var race = welsh.Deferred.race([p1, p2, d1, d2, 37]);
     race.then(function (result) {
       expect(result).to.equal(37);
     });

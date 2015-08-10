@@ -10,6 +10,15 @@ var Welsh;
 (function (Welsh) {
     var Helpers;
     (function (Helpers) {
+        var objectToString = Object.prototype.toString;
+        Helpers.isArray = (function () {
+            if (typeof Array.isArray === 'function') {
+                return Array.isArray;
+            }
+            return function (obj) {
+                return obj && objectToString.call(obj) === '[object Array]';
+            };
+        });
         Helpers.bindThis = (function () {
             if (Function.prototype.bind) {
                 return function (func, thisVal) {
@@ -45,6 +54,7 @@ var Welsh;
 (function (Welsh) {
     var slice = Array.prototype.slice;
     var getThenFunction = Welsh.Helpers.getThenFunction;
+    var isArray = Welsh.Helpers.isArray;
     (function (State) {
         State[State["Fulfilled"] = 1] = "Fulfilled";
         State[State["Rejected"] = 2] = "Rejected";
@@ -77,6 +87,9 @@ var Welsh;
                 return this._result;
             }
             throw new Error("Can't retrieve reason if not rejected");
+        };
+        Common.prototype.done = function (onFulfilled, onRejected) {
+            throw new Error("Not implemented");
         };
         Common.prototype.then = function (onFulfilled, onRejected) {
             throw new Error("Not implemented");
@@ -128,6 +141,64 @@ var Welsh;
         Common.prototype.toDeferred = function () {
             return convertUsing(this, Welsh.Deferred);
         };
+        Common.prototype.race = function () {
+            var _this = this;
+            var Constructor = this.constructor;
+            return new Constructor(function (resolve, reject) {
+                _this.done(function (result) {
+                    if (!isArray(result)) {
+                        throw new TypeError("race() requires an Array");
+                    }
+                    for (var i = 0, len = result.length; i < len; i++) {
+                        var value = result[i];
+                        var then = getThenFunction(value);
+                        if (then) {
+                            then(resolve, reject);
+                            continue;
+                        }
+                        resolve(value);
+                    }
+                }, reject);
+            });
+        };
+        Common.prototype.all = function () {
+            var _this = this;
+            var Constructor = this.constructor;
+            return new Constructor(function (resolve, reject) {
+                _this.done(function (result) {
+                    if (!isArray(result)) {
+                        throw new TypeError("all() requires an Array");
+                    }
+                    var thenables = result.slice();
+                    var waitingFor = thenables.length;
+                    for (var i = 0, len = waitingFor; i < len; i++) {
+                        var then = getThenFunction(thenables[i]);
+                        if (then) {
+                            resolveThenAtIndex(then, i);
+                            continue;
+                        }
+                        waitingFor--;
+                    }
+                    if (!waitingFor) {
+                        resolve(thenables);
+                    }
+                    function resolveThenAtIndex(then, index) {
+                        then(wrappedResolve, wrappedReject);
+                        function wrappedResolve(result) {
+                            thenables[index] = result;
+                            if (!--waitingFor) {
+                                resolve(thenables);
+                            }
+                            return result;
+                        }
+                        function wrappedReject(reason) {
+                            reject(reason);
+                            throw reason;
+                        }
+                    }
+                });
+            });
+        };
         Common.resolve = function (result) {
             if (result instanceof this) {
                 return result;
@@ -139,62 +210,6 @@ var Welsh;
         Common.reject = function (reason) {
             return new this(function (resolve, reject) {
                 reject(reason);
-            });
-        };
-        Common.race = function () {
-            var thenables = [];
-            for (var _i = 0; _i < arguments.length; _i++) {
-                thenables[_i - 0] = arguments[_i];
-            }
-            return new this(function (resolve, reject) {
-                try {
-                    for (var i = 0, len = thenables.length; i < len; i++) {
-                        var value = thenables[i];
-                        var then = getThenFunction(value);
-                        if (then) {
-                            then(resolve, reject);
-                            continue;
-                        }
-                        resolve(value);
-                    }
-                }
-                catch (err) {
-                    reject(err);
-                }
-            });
-        };
-        Common.all = function () {
-            var thenables = [];
-            for (var _i = 0; _i < arguments.length; _i++) {
-                thenables[_i - 0] = arguments[_i];
-            }
-            return new this(function (resolve, reject) {
-                var waitingFor = thenables.length;
-                for (var i = 0, len = waitingFor; i < len; i++) {
-                    var then = getThenFunction(thenables[i]);
-                    if (then) {
-                        resolveThenAtIndex(then, i);
-                        continue;
-                    }
-                    waitingFor--;
-                }
-                if (!waitingFor) {
-                    resolve(thenables);
-                }
-                function resolveThenAtIndex(then, index) {
-                    then(wrappedResolve, wrappedReject);
-                    function wrappedResolve(result) {
-                        thenables[index] = result;
-                        if (!--waitingFor) {
-                            resolve(thenables);
-                        }
-                        return result;
-                    }
-                    function wrappedReject(reason) {
-                        reject(reason);
-                        throw reason;
-                    }
-                }
             });
         };
         Common.fromNode = function (nodeFunction) {
@@ -214,6 +229,12 @@ var Welsh;
                     }
                 });
             }
+        };
+        Common.all = function (resultOrArray) {
+            return this.resolve(resultOrArray).all();
+        };
+        Common.race = function (resultOrArray) {
+            return this.resolve(resultOrArray).race();
         };
         Common.lazy = function (executor) {
             var resolve;
@@ -382,7 +403,7 @@ var Welsh;
         };
         Promise.prototype.then = function (onFulfilled, onRejected) {
             var promise = new Promise(noOp);
-            this.addPending(fulfilledHandler, rejectedHandler);
+            this.done(fulfilledHandler, rejectedHandler);
             return promise;
             function fulfilledHandler(result) {
                 if (typeof onFulfilled !== 'function') {
@@ -409,7 +430,7 @@ var Welsh;
                 }
             }
         };
-        Promise.prototype.addPending = function (onFulfilled, onRejected) {
+        Promise.prototype.done = function (onFulfilled, onRejected) {
             var _this = this;
             var state = this._state;
             if (state) {
@@ -464,6 +485,7 @@ var Welsh;
 var Welsh;
 (function (Welsh) {
     var getThenFunction = Welsh.Helpers.getThenFunction;
+    var queueCall = Welsh.Queue.queueCall;
     var Deferred = (function (_super) {
         __extends(Deferred, _super);
         function Deferred(executor) {
@@ -504,6 +526,33 @@ var Welsh;
                 this.proceed(this._result);
             }
             return this;
+        };
+        Deferred.prototype.done = function (onFulfilled, onRejected) {
+            this.then(wrapFulfilled, wrapRejected);
+            function wrapFulfilled(result) {
+                if (typeof onFulfilled !== 'function') {
+                    return result;
+                }
+                try {
+                    onFulfilled(result);
+                }
+                catch (err) {
+                    queueCall(function () { throw err; });
+                    return result;
+                }
+            }
+            function wrapRejected(reason) {
+                if (typeof onRejected !== 'function') {
+                    throw reason;
+                }
+                try {
+                    onRejected(reason);
+                }
+                catch (err) {
+                    queueCall(function () { throw err; });
+                    throw reason;
+                }
+            }
         };
         Deferred.prototype.proceed = function (result) {
             this._running = true;
