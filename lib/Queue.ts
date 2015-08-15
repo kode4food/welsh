@@ -9,7 +9,8 @@
 "use strict";
 
 namespace Welsh.Queue {
-  var queue: Function[] = [];
+  var _isFlushing: boolean = false;
+  var _queue: Function[] = [];
 
   var nextTick = (function () {
     if ( typeof setImmediate === 'function' ) {
@@ -26,16 +27,18 @@ namespace Welsh.Queue {
   }());
 
   export function queueCall(callback: Function) {
-    if ( queue.length === 0 ) {
+    _queue[_queue.length] = callback;
+    if ( !_isFlushing ) {
       nextTick(performCalls);
     }
-    queue[queue.length] = callback;
   }
 
   function performCalls() {
-    for ( var i = 0; i < queue.length; i++ ) {
-      queue[i]();
+    _isFlushing = true;
+    for ( var i = 0; i < _queue.length; i++ ) {
+      _queue[i]();
     }
-    queue = [];
+    _isFlushing = false;
+    _queue = [];
   }
 }
