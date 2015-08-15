@@ -52,7 +52,7 @@ namespace Welsh {
         }
         this._state = State.Fulfilled;
         this._result = result;
-        queueCall(() => this.notifyPending());
+        queueCall(() => { this.notifyPending(); });
       }
       catch ( err ) {
         this.reject(err);
@@ -65,7 +65,7 @@ namespace Welsh {
       }
       this._state = State.Rejected;
       this._result = reason;
-      queueCall(() => this.notifyPending());
+      queueCall(() => { this.notifyPending(); });
     }
 
     private doResolve(executor: Executor) {
@@ -142,7 +142,7 @@ namespace Welsh {
           callback = onRejected;
         }
 
-        queueCall(() => callback(this._result));
+        queueCall(() => { callback(this._result); });
         return;
       }
 

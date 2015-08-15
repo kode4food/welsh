@@ -403,12 +403,12 @@ var Welsh;
         function queueCall(callback) {
             _queue[_queue.length] = callback;
             if (!_isFlushing) {
+                _isFlushing = true;
                 nextTick(performCalls);
             }
         }
         Queue.queueCall = queueCall;
         function performCalls() {
-            _isFlushing = true;
             for (var i = 0; i < _queue.length; i++) {
                 _queue[i]();
             }
@@ -462,7 +462,7 @@ var Welsh;
                 }
                 this._state = Welsh.State.Fulfilled;
                 this._result = result;
-                queueCall(function () { return _this.notifyPending(); });
+                queueCall(function () { _this.notifyPending(); });
             }
             catch (err) {
                 this.reject(err);
@@ -475,7 +475,7 @@ var Welsh;
             }
             this._state = Welsh.State.Rejected;
             this._result = reason;
-            queueCall(function () { return _this.notifyPending(); });
+            queueCall(function () { _this.notifyPending(); });
         };
         Promise.prototype.doResolve = function (executor) {
             var self = this;
@@ -544,7 +544,7 @@ var Welsh;
                 else {
                     callback = onRejected;
                 }
-                queueCall(function () { return callback(_this._result); });
+                queueCall(function () { callback(_this._result); });
                 return;
             }
             var item = [undefined, onFulfilled, onRejected];

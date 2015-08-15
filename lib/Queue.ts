@@ -29,12 +29,12 @@ namespace Welsh.Queue {
   export function queueCall(callback: Function) {
     _queue[_queue.length] = callback;
     if ( !_isFlushing ) {
+      _isFlushing = true;
       nextTick(performCalls);
     }
   }
 
   function performCalls() {
-    _isFlushing = true;
     for ( var i = 0; i < _queue.length; i++ ) {
       _queue[i]();
     }
