@@ -36,7 +36,7 @@ namespace Welsh {
       this.doResolve(executor);
     }
 
-    protected resolve(result?: Result) {
+    public resolve(result?: Result) {
       if ( this._state ) {
         return;
       }
@@ -59,7 +59,7 @@ namespace Welsh {
       }
     }
 
-    protected reject(reason?: Reason) {
+    public reject(reason?: Reason) {
       if ( this._state ) {
         return;
       }
@@ -73,7 +73,7 @@ namespace Welsh {
       var done: boolean;
 
       try {
-        executor(wrappedResolve, wrappedReject);
+        executor(onFulfilled, onRejected);
       }
       catch ( err ) {
         if ( done ) {
@@ -82,7 +82,7 @@ namespace Welsh {
         this.reject(err);
       }
 
-      function wrappedResolve(result?: Result) {
+      function onFulfilled(result?: Result) {
         if ( done ) {
           return;
         }
@@ -90,7 +90,7 @@ namespace Welsh {
         self.resolve(result);
       }
 
-      function wrappedReject(reason?: Reason) {
+      function onRejected(reason?: Reason) {
         if ( done ) {
           return;
         }
@@ -101,10 +101,10 @@ namespace Welsh {
 
     public then(onFulfilled?: Resolver, onRejected?: Rejecter): Promise {
       var promise = new Promise(noOp);
-      this.done(fulfilledHandler, rejectedHandler);
+      this.done(wrapFulfilled, wrapRejected);
       return promise;
 
-      function fulfilledHandler(result?: Result) {
+      function wrapFulfilled(result?: Result) {
         if ( typeof onFulfilled !== 'function' ) {
           promise.resolve(result);
           return;
@@ -117,7 +117,7 @@ namespace Welsh {
         }
       }
 
-      function rejectedHandler(reason?: Reason) {
+      function wrapRejected(reason?: Reason) {
         if ( typeof onRejected !== 'function' ) {
           promise.reject(reason);
           return;

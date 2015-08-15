@@ -17,6 +17,8 @@ namespace Welsh {
   import getThenFunction = Helpers.getThenFunction;
   import createRace = Collection.createRace;
   import createAll = Collection.createAll;
+  import createSome = Collection.createSome;
+  import createAny = Collection.createAny;
 
   export type Result = Thenable | any;
   export type Reason = any;
@@ -80,6 +82,14 @@ namespace Welsh {
       throw new Error("Can't retrieve reason if not rejected");
     }
 
+    public resolve(result?: Result): void {
+      throw new Error("Not implemented");
+    }
+
+    public reject(reason?: Reason): void {
+      throw new Error("Not implemented");
+    }
+
     public done(onFulfilled?: Resolver, onRejected?: Rejecter): void {
       throw new Error("Not implemented");
     }
@@ -93,9 +103,9 @@ namespace Welsh {
     }
 
     public finally(onFinally?: Finalizer): Common {
-      return this.then(wrappedFulfilled, wrappedRejected);
+      return this.then(onFulfilled, onRejected);
 
-      function wrappedFulfilled(result?: Result) {
+      function onFulfilled(result?: Result) {
         try {
           onFinally();
         }
@@ -104,7 +114,7 @@ namespace Welsh {
         }
       }
 
-      function wrappedRejected(reason?: Reason) {
+      function onRejected(reason?: Reason) {
         try {
           onFinally();
         }
@@ -115,9 +125,9 @@ namespace Welsh {
     }
 
     public toNode(callback: NodeCallback): Common {
-      return this.then(wrappedFulfilled, wrappedRejected);
+      return this.then(onFulfilled, onRejected);
 
-      function wrappedFulfilled(result?: Result) {
+      function onFulfilled(result?: Result) {
         try {
           callback(null, result);
         }
@@ -126,7 +136,7 @@ namespace Welsh {
         }
       }
 
-      function wrappedRejected(reason?: Reason) {
+      function onRejected(reason?: Reason) {
         try {
           callback(reason);
         }
@@ -150,6 +160,14 @@ namespace Welsh {
 
     public all(): Common {
       return createAll(this);
+    }
+
+    public some(count: number): Common {
+      return createSome(this, count);
+    }
+
+    public any(): Common {
+      return createAny(this);
     }
 
     static resolve(result?: Result): Common {
@@ -196,6 +214,14 @@ namespace Welsh {
       return this.resolve(resultOrArray).race();
     }
 
+    static some(resultOrArray: ResultOrArray, count: number): Common {
+      return this.resolve(resultOrArray).some(count);
+    }
+
+    static any(resultOrArray: ResultOrArray): Common {
+      return this.resolve(resultOrArray).any();
+    }
+
     static lazy(executor: Executor): Common {
       var resolve: Resolver;
       var reject: Rejecter;
@@ -223,14 +249,14 @@ namespace Welsh {
   function convertUsing(deferred: Thenable, constructor: CommonConstructable) {
     return new constructor(function (resolve: Resolver, reject: Rejecter) {
       var then = getThenFunction(deferred);
-      then(wrappedResolve, wrappedReject);
+      then(onFulfilled, onRejected);
 
-      function wrappedResolve(result?: Result) {
+      function onFulfilled(result?: Result) {
         resolve(result);
         return result;
       }
 
-      function wrappedReject(reason?: Reason) {
+      function onRejected(reason?: Reason) {
         reject(reason);
         throw reason;
       }

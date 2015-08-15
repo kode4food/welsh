@@ -26,7 +26,7 @@ namespace Welsh.Queue {
   }());
 
   export function queueCall(callback: Function) {
-    if ( !queue.length ) {
+    if ( queue.length === 0 ) {
       nextTick(performCalls);
     }
     queue[queue.length] = callback;

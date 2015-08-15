@@ -1,6 +1,6 @@
 {
   "name": "welsh",
-  "version": "3.2.0",
+  "version": "3.3.0",
   "description": "Promises, but not really",
   "authors": ["Thomas S. Bradford"],
   "main": "dist/welsh.min.js",

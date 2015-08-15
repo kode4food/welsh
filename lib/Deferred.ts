@@ -1,5 +1,6 @@
 /// <reference path="./Helpers.ts"/>
 /// <reference path="./Common.ts"/>
+/// <reference path="./Queue.ts"/>
 
 /*
  * Welsh (Promises, but not really)
@@ -23,26 +24,28 @@ namespace Welsh {
     constructor(executor: Executor) {
       super(executor);
 
-      var self = this;
       if ( typeof executor !== 'function' ) {
-        reject(new Error("Deferred requires an Executor Function"));
+        this.reject(new Error("Deferred requires an Executor Function"));
         return;
       }
 
       try {
-        executor(resolve, reject);
+        executor(
+          (result?: Result) => { this.resolve(result); },
+          (reason?: Reason) => { this.reject(reason); }
+        );
       }
       catch ( err ) {
-        reject(err);
+        this.reject(err);
       }
+    }
 
-      function resolve(result?: Result) {
-        self.start(State.Fulfilled, result);
-      }
+    public resolve(result?: Result): void {
+      this.start(State.Fulfilled, result);
+    }
 
-      function reject(reason?: Reason) {
-        self.start(State.Rejected, reason);
-      }
+    public reject(reason?: Reason): void {
+      this.start(State.Rejected, reason);
     }
 
     private start(newState: State, result?: ResultOrReason) {

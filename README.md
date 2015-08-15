@@ -90,33 +90,41 @@ new welsh.Deferred(function (resolve, reject) {
 
 The Promise or Deferred that is returned will be an Object that contains several Function properties.  Most of these should be familiar.  They are:
 
-`isPending()` - Returns whether or not the Promise or Deferred is currently in a pending state.
+`.isPending()` - Returns whether or not the Promise or Deferred is currently in a pending state.
 
-`isSettled()` - Returns whether or not the Promise or Deferred is in a settled (non-pending) state.
+`.isSettled()` - Returns whether or not the Promise or Deferred is in a settled (non-pending) state.
 
-`isFulfilled()` - Returns whether or not the Promise or Deferred is in a resolved (non-rejected) state.
+`.isFulfilled()` - Returns whether or not the Promise or Deferred is in a resolved (non-rejected) state.
 
-`isRejected()` - Returns whether or not the Promise or Deferred is in a rejected state.
+`.isRejected()` - Returns whether or not the Promise or Deferred is in a rejected state.
 
-`resolve(result?:any)` - Resolves the Promise or Deferred with the specified result.
+`.resolve(result?:any)` - Resolves the Promise or Deferred with the specified result.
 
-`reject(reason?:any)` - Rejects the Promise or Deferred with the specified reason.
+`.reject(reason?:any)` - Rejects the Promise or Deferred with the specified reason.
 
-`getResult()` - Returns the Result of the Promise or Deferred if it has been fulfilled.  If it has not been fulfilled, an uncaught Error is thrown.
+`.getResult()` - Returns the Result of the Promise or Deferred if it has been fulfilled.  If it has not been fulfilled, an uncaught Error is thrown.
 
-`getReason()` - Returns the reason that the Promise or Deferred has been rejected, if it has been rejected.  If it has not been rejected, an uncaught Error is thrown.
+`.getReason()` - Returns the reason that the Promise or Deferred has been rejected, if it has been rejected.  If it has not been rejected, an uncaught Error is thrown.
 
-`then(onFulfilled?:Function, onRejected?:Function)` - In the case of a Promise, creates a Promise whose value depends on its parent. In the case of a Deferred, adds an onFulfilled and/or onRejected handler to the dispatch chain.
+`.then(onFulfilled?:Function, onRejected?:Function)` - In the case of a Promise, creates a Promise whose value depends on its parent. In the case of a Deferred, adds an onFulfilled and/or onRejected handler to the dispatch chain.
 
-`catch(onRejected?:Function)` - Same as 'then' except that only an `onRejected` callback is provided.
+`.catch(onRejected?:Function)` - Same as 'then' except that only an `onRejected` callback is provided.
 
-`finally(onFinally?:Function)` - Will call the onFinally callback when the parent Promise or Deferred is either fulfilled or rejected.  Will not interrupt or modify further processing.
+`.finally(onFinally?:Function)` - Will call the onFinally callback when the parent Promise or Deferred is either fulfilled or rejected.  Will not interrupt or modify further processing.
 
-`toNode(nodeCallback?:Function)` - Returns a Promise or Deferred that performs a Node-style Callback.  Will not interrupt or modify further processing.
+`.toNode(nodeCallback?:Function)` - Returns a Promise or Deferred that performs a Node-style Callback.  Will not interrupt or modify further processing.
 
-`toPromise()` - Converts the current Promise or Deferred into a new Promise (mostly useful for Deferreds).
+`.toPromise()` - Converts the current Promise or Deferred into a new Promise (mostly useful for Deferreds).
 
-`toDeferred()` - Converts the current Promise or Deferred into a new Deferred.
+`.toDeferred()` - Converts the current Promise or Deferred into a new Deferred.
+
+`.all()` - Creates a new Promise or Deferred whose eventually fulfilled value will be an Array containing the fulfilled results of each provided Promise or Deferred.
+
+`.race()` - Creates a new Promise or Deferred whose eventually fulfilled value will be whichever provided Promise or Deferred is resolved or rejected first.
+
+`.some(count:number)` - Creates a new Promise or Deferred whose eventually fulfilled value will be an Array containing the first `count` results fulfilled from the original Array.  If too few results can be fulfilled, the Promise or Deferred is rejected.
+
+`.any()` - Effectively the same as `some()`, but with a count of 1, except that the resulting array is unwrapped, and the single element is provided as a fulfilled value.
 
 For example:
 
@@ -134,13 +142,11 @@ The `welsh.Promise` and `welsh.Deferred` interfaces also expose some additional 
 
 `reject(reason)` - Creates and returns an immediately rejected Promise or Deferred.
 
-`all(...promises)` - Creates a new Promise or Deferred whose eventually fulfilled value will be an Array containing the fulfilled results of each provided Promise or Deferred.
-
-`race(...promises)` - Creates a new Promise or Deferred whose eventually fulfilled value will be whichever provided Promise or Deferred is resolved first.
-
 `lazy(executor:Function)` - Constructs a 'lazy' Promise or Deferred where the Executor callback is not invoked until the first `then()`, `catch()`, or `finally()` is provided.
 
 `fromNode(nodeFunc:Function)` - Converts a Node-style Function that accepts a callback to one that instead returns a Promise or Deferred.
+
+In addition to these functions, versions of `all()`, `race()`, `some()`, and `any()` are provided.  These versions require an initial promise or Array from which to bootstrap.
 
 For example:
 
@@ -149,7 +155,7 @@ var p1 = new welsh.Promise(function () { });
 var p2 = new welsh.Promise(function () { });
 var d1 = new welsh.Deferred(function (resolve) { resolve('D1 Wins!'); });
 
-welsh.Promise.race(p1, p2, d1).then(function (result) {
+welsh.Promise.race([p1, p2, d1]).then(function (result) {
   console.log(result);
 });
 ```
