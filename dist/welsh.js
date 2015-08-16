@@ -389,43 +389,69 @@ var Welsh;
 "use strict";
 var Welsh;
 (function (Welsh) {
-    var Queue;
-    (function (Queue) {
-        var _isFlushing = false;
-        var _queue = [];
-        var nextTick = (function () {
-            if (typeof setImmediate === 'function') {
-                return setImmediate;
-            }
-            if (typeof window === 'object' &&
-                typeof window.requestAnimationFrame === 'function') {
-                return window.requestAnimationFrame;
-            }
-            if (typeof setTimeout === 'function') {
-                return setTimeout;
-            }
-            throw new Error("And I should schedule Promises how?");
-        }());
-        function queueCall(callback) {
-            _queue[_queue.length] = callback;
-            if (!_isFlushing) {
-                _isFlushing = true;
-                nextTick(performCalls);
-            }
+    var nextTick = (function () {
+        if (typeof setImmediate === 'function') {
+            return setImmediate;
         }
-        Queue.queueCall = queueCall;
-        function performCalls() {
-            for (var i = 0; i < _queue.length; i++) {
-                _queue[i]();
-            }
-            _isFlushing = false;
-            _queue = [];
+        if (typeof window === 'object' &&
+            typeof window.requestAnimationFrame === 'function') {
+            return window.requestAnimationFrame;
         }
-    })(Queue = Welsh.Queue || (Welsh.Queue = {}));
+        if (typeof setTimeout === 'function') {
+            return setTimeout;
+        }
+        throw new Error("And I should schedule Promises how?");
+    }());
+    var Scheduler = (function () {
+        function Scheduler() {
+            this._capacity = 16 * 3;
+            this._isFlushing = false;
+            this._head = 0;
+            this._tail = 0;
+        }
+        Scheduler.prototype.queue = function (callback, target, arg) {
+            var _this = this;
+            var tail = this._tail;
+            this[tail] = callback;
+            this[tail + 1] = target;
+            this[tail + 2] = arg;
+            this._tail = tail + 3;
+            if (!this._isFlushing) {
+                this._isFlushing = true;
+                nextTick(function () { _this.performCalls(); });
+            }
+        };
+        Scheduler.prototype.collapseQueue = function () {
+            var head = this._head;
+            for (var i = 0, len = this._tail - head; i < len; i++) {
+                this[i] = this[head + i];
+                this[head + i] = undefined;
+            }
+            this._head = 0;
+            this._tail = len;
+        };
+        Scheduler.prototype.performCalls = function () {
+            while (this._head < this._tail) {
+                var head = this._head;
+                var callback = this[head];
+                var target = this[head + 1];
+                var arg = this[head + 2];
+                this._head = head + 3;
+                if (this._tail > this._capacity) {
+                    this.collapseQueue();
+                }
+                callback.call(target, arg);
+            }
+            this._isFlushing = false;
+        };
+        return Scheduler;
+    })();
+    Welsh.Scheduler = Scheduler;
+    Welsh.GlobalScheduler = new Scheduler();
 })(Welsh || (Welsh = {}));
 /// <reference path="./Helpers.ts"/>
 /// <reference path="./Common.ts"/>
-/// <reference path="./Queue.ts"/>
+/// <reference path="./Scheduler.ts"/>
 "use strict";
 var __extends = (this && this.__extends) || function (d, b) {
     for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p];
@@ -436,7 +462,6 @@ var __extends = (this && this.__extends) || function (d, b) {
 var Welsh;
 (function (Welsh) {
     var getThenFunction = Welsh.Helpers.getThenFunction;
-    var queueCall = Welsh.Queue.queueCall;
     function noOp() { }
     var Promise = (function (_super) {
         __extends(Promise, _super);
@@ -452,7 +477,6 @@ var Welsh;
             this.doResolve(executor);
         }
         Promise.prototype.resolve = function (result) {
-            var _this = this;
             if (this._state) {
                 return;
             }
@@ -468,20 +492,19 @@ var Welsh;
                 }
                 this._state = Welsh.State.Fulfilled;
                 this._result = result;
-                queueCall(function () { _this.notifyPending(); });
+                Welsh.GlobalScheduler.queue(this.notifyPending, this);
             }
             catch (err) {
                 this.reject(err);
             }
         };
         Promise.prototype.reject = function (reason) {
-            var _this = this;
             if (this._state) {
                 return;
             }
             this._state = Welsh.State.Rejected;
             this._result = reason;
-            queueCall(function () { _this.notifyPending(); });
+            Welsh.GlobalScheduler.queue(this.notifyPending, this);
         };
         Promise.prototype.doResolve = function (executor) {
             var self = this;
@@ -540,7 +563,6 @@ var Welsh;
             }
         };
         Promise.prototype.done = function (onFulfilled, onRejected) {
-            var _this = this;
             var state = this._state;
             if (state) {
                 var callback;
@@ -550,7 +572,7 @@ var Welsh;
                 else {
                     callback = onRejected;
                 }
-                queueCall(function () { callback(_this._result); });
+                Welsh.GlobalScheduler.queue(callback, null, this._result);
                 return;
             }
             var item = [undefined, onFulfilled, onRejected];
@@ -590,12 +612,11 @@ var Welsh;
 })(Welsh || (Welsh = {}));
 /// <reference path="./Helpers.ts"/>
 /// <reference path="./Common.ts"/>
-/// <reference path="./Queue.ts"/>
+/// <reference path="./Scheduler.ts"/>
 "use strict";
 var Welsh;
 (function (Welsh) {
     var getThenFunction = Welsh.Helpers.getThenFunction;
-    var queueCall = Welsh.Queue.queueCall;
     var Deferred = (function (_super) {
         __extends(Deferred, _super);
         function Deferred(executor) {
@@ -647,7 +668,7 @@ var Welsh;
                     onFulfilled(result);
                 }
                 catch (err) {
-                    queueCall(function () { throw err; });
+                    Welsh.GlobalScheduler.queue(function () { throw err; });
                     return result;
                 }
             }
@@ -659,7 +680,7 @@ var Welsh;
                     onRejected(reason);
                 }
                 catch (err) {
-                    queueCall(function () { throw err; });
+                    Welsh.GlobalScheduler.queue(function () { throw err; });
                     throw reason;
                 }
             }

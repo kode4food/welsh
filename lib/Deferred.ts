@@ -1,6 +1,6 @@
 /// <reference path="./Helpers.ts"/>
 /// <reference path="./Common.ts"/>
-/// <reference path="./Queue.ts"/>
+/// <reference path="./Scheduler.ts"/>
 
 /*
  * Welsh (Promises, but not really)
@@ -14,7 +14,6 @@
 
 namespace Welsh {
   import getThenFunction = Helpers.getThenFunction;
-  import queueCall = Queue.queueCall;
 
   export class Deferred extends Common {
     private _running: boolean;
@@ -79,7 +78,7 @@ namespace Welsh {
           onFulfilled(result);
         }
         catch (err) {
-          queueCall(() => { throw err; });
+          GlobalScheduler.queue(() => { throw err; });
           return result;
         }
       }
@@ -92,7 +91,7 @@ namespace Welsh {
           onRejected(reason);
         }
         catch (err) {
-          queueCall(() => { throw err; });
+          GlobalScheduler.queue(() => { throw err; });
           throw reason;
         }
       }

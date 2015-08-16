@@ -1,6 +1,6 @@
 /// <reference path="./Helpers.ts"/>
 /// <reference path="./Common.ts"/>
-/// <reference path="./Queue.ts"/>
+/// <reference path="./Scheduler.ts"/>
 
 /*
  * Welsh (Promises, but not really)
@@ -14,7 +14,6 @@
 
 namespace Welsh {
   import getThenFunction = Helpers.getThenFunction;
-  import queueCall = Queue.queueCall;
 
   function noOp() {}
 
@@ -36,7 +35,7 @@ namespace Welsh {
       this.doResolve(executor);
     }
 
-    public resolve(result?: Result) {
+    public resolve(result?: Result): void {
       if ( this._state ) {
         return;
       }
@@ -52,20 +51,20 @@ namespace Welsh {
         }
         this._state = State.Fulfilled;
         this._result = result;
-        queueCall(() => { this.notifyPending(); });
+        GlobalScheduler.queue(this.notifyPending, this);
       }
       catch ( err ) {
         this.reject(err);
       }
     }
 
-    public reject(reason?: Reason) {
+    public reject(reason?: Reason): void {
       if ( this._state ) {
         return;
       }
       this._state = State.Rejected;
       this._result = reason;
-      queueCall(() => { this.notifyPending(); });
+      GlobalScheduler.queue(this.notifyPending, this);
     }
 
     private doResolve(executor: Executor) {
@@ -142,7 +141,7 @@ namespace Welsh {
           callback = onRejected;
         }
 
-        queueCall(() => { callback(this._result); });
+        GlobalScheduler.queue(callback, null, this._result);
         return;
       }
 
