@@ -38,21 +38,24 @@ namespace Welsh {
       this._tail = tail + 3;
       if ( !this._isFlushing ) {
         this._isFlushing = true;
-        nextTick(() => { this.performCalls() });
+        nextTick(() => { this.flushQueue() });
       }
     }
 
     private collapseQueue(): void {
       var head = this._head;
-      for ( var i = 0, len = this._tail - head; i < len; i++ ) {
+      var tail = this._tail;
+      for ( var i = 0, len = tail - head; i < len; i++ ) {
         this[i] = this[head + i];
-        this[head + i] = undefined;
+      }
+      while ( i < tail ) {
+        this[i++] = undefined;
       }
       this._head = 0;
       this._tail = len;
     }
 
-    private performCalls(): void {
+    private flushQueue(): void {
       while ( this._head < this._tail ) {
         var head = this._head;
         var callback = this[head];
