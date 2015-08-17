@@ -52,7 +52,8 @@ namespace Welsh {
         return;
       }
       this._state = newState;
-      this.proceed(result);
+      this._running = true;
+      GlobalScheduler.queue(this.proceed, this, result);
     }
 
     public then(onFulfilled?: Resolver, onRejected?: Rejecter): Deferred {
@@ -62,7 +63,8 @@ namespace Welsh {
       ];
 
       if ( this._state && !this._running ) {
-        this.proceed(this._result);
+        this._running = true;
+        GlobalScheduler.queue(this.proceed, this, this._result);
       }
       return this;
     }
@@ -98,7 +100,6 @@ namespace Welsh {
     }
 
     private proceed(result?: ResultOrReason) {
-      this._running = true;
       var pendingHandlers = this._pendingHandlers;
       var pendingIndex = this._pendingIndex;
       var state = this._state;

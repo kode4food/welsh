@@ -649,7 +649,8 @@ var Welsh;
                 return;
             }
             this._state = newState;
-            this.proceed(result);
+            this._running = true;
+            Welsh.GlobalScheduler.queue(this.proceed, this, result);
         };
         Deferred.prototype.then = function (onFulfilled, onRejected) {
             var pendingHandlers = this._pendingHandlers;
@@ -657,7 +658,8 @@ var Welsh;
                 undefined, onFulfilled, onRejected
             ];
             if (this._state && !this._running) {
-                this.proceed(this._result);
+                this._running = true;
+                Welsh.GlobalScheduler.queue(this.proceed, this, this._result);
             }
             return this;
         };
@@ -689,7 +691,6 @@ var Welsh;
             }
         };
         Deferred.prototype.proceed = function (result) {
-            this._running = true;
             var pendingHandlers = this._pendingHandlers;
             var pendingIndex = this._pendingIndex;
             var state = this._state;
