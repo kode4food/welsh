@@ -40,20 +40,23 @@ namespace Welsh {
     }
 
     public resolve(result?: Result): void {
-      this.start(State.Fulfilled, result);
+      this.startWith(State.Fulfilled, result);
     }
 
     public reject(reason?: Reason): void {
-      this.start(State.Rejected, reason);
+      this.startWith(State.Rejected, reason);
     }
 
-    private start(newState: State, result?: ResultOrReason) {
+    private startWith(newState: State, result?: ResultOrReason): void {
       if ( this._state ) {
         return;
       }
       this._state = newState;
-      this._running = true;
-      this.proceed(result);
+      this._result = result;
+      if ( this._pendingHandlers.length > 0 ) {
+        this._running = true;
+        GlobalScheduler.queue(this.proceed, this);
+      }
     }
 
     public then(onFulfilled?: Resolver, onRejected?: Rejecter): Deferred {
@@ -64,7 +67,7 @@ namespace Welsh {
 
       if ( this._state && !this._running ) {
         this._running = true;
-        this.proceed(this._result);
+        GlobalScheduler.queue(this.proceed, this);
       }
       return this;
     }
@@ -72,7 +75,7 @@ namespace Welsh {
     public done(onFulfilled?: Resolver, onRejected?: Rejecter): void {
       this.then(wrapFulfilled, wrapRejected);
 
-      function wrapFulfilled(result?: Result) {
+      function wrapFulfilled(result?: Result): Result {
         if ( typeof onFulfilled !== 'function' ) {
           return result;
         }
@@ -85,7 +88,7 @@ namespace Welsh {
         }
       }
 
-      function wrapRejected(reason?: Reason) {
+      function wrapRejected(reason?: Reason): Result {
         if ( typeof onRejected !== 'function' ) {
           throw reason;
         }
@@ -99,9 +102,10 @@ namespace Welsh {
       }
     }
 
-    private proceed(result?: ResultOrReason) {
+    private proceed(): void {
       var pendingHandlers = this._pendingHandlers;
       var pendingIndex = this._pendingIndex;
+      var result = this._result;
       var state = this._state;
 
       do {
@@ -121,33 +125,35 @@ namespace Welsh {
         var callback = pendingHandlers[pendingIndex++][state];
         if ( typeof callback === 'function' ) {
           try {
-            result = callback(result);
-            state = State.Fulfilled;
+            this._result = result = callback(result);
+            this._state = state = State.Fulfilled;
           }
           catch ( reason ) {
-            result = reason;
-            state = State.Rejected;
+            this._result = result = reason;
+            this._state = state = State.Rejected;
           }
         }
       }
       while ( true );
-      this._result = result;
       this._pendingHandlers = [];
       this._pendingIndex = 0;
-      this._state = state;
       this._running = false;
 
-      function fulfilledLinker(result?: Result) {
-        self._state = State.Fulfilled;
-        self.proceed(result);
+      function fulfilledLinker(result?: Result): Result {
+        self.continueWith(State.Fulfilled, result);
         return result;
       }
 
-      function rejectedLinker(reason?: Reason) {
-        self._state = State.Rejected;
-        self.proceed(reason);
+      function rejectedLinker(reason?: Reason): Result {
+        self.continueWith(State.Rejected, reason);
         throw reason;
       }
+    }
+
+    private continueWith(newState: State, result?: ResultOrReason): void {
+      this._state = newState;
+      this._result = result;
+      GlobalScheduler.queue(this.proceed, this);
     }
   }
 }

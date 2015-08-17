@@ -67,7 +67,7 @@ namespace Welsh {
       GlobalScheduler.queue(this.notifyPending, this);
     }
 
-    private doResolve(executor: Executor) {
+    private doResolve(executor: Executor): void {
       var self = this;
       var done: boolean;
 
@@ -81,7 +81,7 @@ namespace Welsh {
         this.reject(err);
       }
 
-      function onFulfilled(result?: Result) {
+      function onFulfilled(result?: Result): void {
         if ( done ) {
           return;
         }
@@ -89,7 +89,7 @@ namespace Welsh {
         self.resolve(result);
       }
 
-      function onRejected(reason?: Reason) {
+      function onRejected(reason?: Reason): void {
         if ( done ) {
           return;
         }
@@ -103,7 +103,7 @@ namespace Welsh {
       this.done(wrapFulfilled, wrapRejected);
       return promise;
 
-      function wrapFulfilled(result?: Result) {
+      function wrapFulfilled(result?: Result): void {
         if ( typeof onFulfilled !== 'function' ) {
           promise.resolve(result);
           return;
@@ -116,7 +116,7 @@ namespace Welsh {
         }
       }
 
-      function wrapRejected(reason?: Reason) {
+      function wrapRejected(reason?: Reason): void {
         if ( typeof onRejected !== 'function' ) {
           promise.reject(reason);
           return;
@@ -162,7 +162,7 @@ namespace Welsh {
       pendingHandlers[pendingHandlers.length] = item;
     }
 
-    private notifyPending() {
+    private notifyPending(): void {
       var pendingHandlers = this._pendingHandlers;
       if ( !pendingHandlers ) {
         return;

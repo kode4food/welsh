@@ -639,18 +639,21 @@ var Welsh;
             }
         }
         Deferred.prototype.resolve = function (result) {
-            this.start(Welsh.State.Fulfilled, result);
+            this.startWith(Welsh.State.Fulfilled, result);
         };
         Deferred.prototype.reject = function (reason) {
-            this.start(Welsh.State.Rejected, reason);
+            this.startWith(Welsh.State.Rejected, reason);
         };
-        Deferred.prototype.start = function (newState, result) {
+        Deferred.prototype.startWith = function (newState, result) {
             if (this._state) {
                 return;
             }
             this._state = newState;
-            this._running = true;
-            Welsh.GlobalScheduler.queue(this.proceed, this, result);
+            this._result = result;
+            if (this._pendingHandlers.length > 0) {
+                this._running = true;
+                Welsh.GlobalScheduler.queue(this.proceed, this);
+            }
         };
         Deferred.prototype.then = function (onFulfilled, onRejected) {
             var pendingHandlers = this._pendingHandlers;
@@ -659,7 +662,7 @@ var Welsh;
             ];
             if (this._state && !this._running) {
                 this._running = true;
-                Welsh.GlobalScheduler.queue(this.proceed, this, this._result);
+                Welsh.GlobalScheduler.queue(this.proceed, this);
             }
             return this;
         };
@@ -690,9 +693,10 @@ var Welsh;
                 }
             }
         };
-        Deferred.prototype.proceed = function (result) {
+        Deferred.prototype.proceed = function () {
             var pendingHandlers = this._pendingHandlers;
             var pendingIndex = this._pendingIndex;
+            var result = this._result;
             var state = this._state;
             do {
                 var then = getThenFunction(result);
@@ -709,30 +713,31 @@ var Welsh;
                 var callback = pendingHandlers[pendingIndex++][state];
                 if (typeof callback === 'function') {
                     try {
-                        result = callback(result);
-                        state = Welsh.State.Fulfilled;
+                        this._result = result = callback(result);
+                        this._state = state = Welsh.State.Fulfilled;
                     }
                     catch (reason) {
-                        result = reason;
-                        state = Welsh.State.Rejected;
+                        this._result = result = reason;
+                        this._state = state = Welsh.State.Rejected;
                     }
                 }
             } while (true);
-            this._result = result;
             this._pendingHandlers = [];
             this._pendingIndex = 0;
-            this._state = state;
             this._running = false;
             function fulfilledLinker(result) {
-                self._state = Welsh.State.Fulfilled;
-                self.proceed(result);
+                self.continueWith(Welsh.State.Fulfilled, result);
                 return result;
             }
             function rejectedLinker(reason) {
-                self._state = Welsh.State.Rejected;
-                self.proceed(reason);
+                self.continueWith(Welsh.State.Rejected, reason);
                 throw reason;
             }
+        };
+        Deferred.prototype.continueWith = function (newState, result) {
+            this._state = newState;
+            this._result = result;
+            Welsh.GlobalScheduler.queue(this.proceed, this);
         };
         return Deferred;
     })(Welsh.Common);

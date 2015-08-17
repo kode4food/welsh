@@ -105,7 +105,7 @@ namespace Welsh {
     public finally(onFinally?: Finalizer): Common {
       return this.then(onFulfilled, onRejected);
 
-      function onFulfilled(result?: Result) {
+      function onFulfilled(result?: Result): Result {
         try {
           onFinally();
         }
@@ -114,7 +114,7 @@ namespace Welsh {
         }
       }
 
-      function onRejected(reason?: Reason) {
+      function onRejected(reason?: Reason): Result {
         try {
           onFinally();
         }
@@ -127,7 +127,7 @@ namespace Welsh {
     public toNode(callback: NodeCallback): Common {
       return this.then(onFulfilled, onRejected);
 
-      function onFulfilled(result?: Result) {
+      function onFulfilled(result?: Result): Result {
         try {
           callback(null, result);
         }
@@ -136,7 +136,7 @@ namespace Welsh {
         }
       }
 
-      function onRejected(reason?: Reason) {
+      function onRejected(reason?: Reason): Result {
         try {
           callback(reason);
         }
@@ -251,12 +251,12 @@ namespace Welsh {
       var then = getThenFunction(deferred);
       then(onFulfilled, onRejected);
 
-      function onFulfilled(result?: Result) {
+      function onFulfilled(result?: Result): Result {
         resolve(result);
         return result;
       }
 
-      function onRejected(reason?: Reason) {
+      function onRejected(reason?: Reason): Result {
         reject(reason);
         throw reason;
       }
