@@ -53,7 +53,7 @@ namespace Welsh {
       }
       this._state = newState;
       this._running = true;
-      GlobalScheduler.queue(this.proceed, this, result);
+      this.proceed(result);
     }
 
     public then(onFulfilled?: Resolver, onRejected?: Rejecter): Deferred {
@@ -64,7 +64,7 @@ namespace Welsh {
 
       if ( this._state && !this._running ) {
         this._running = true;
-        GlobalScheduler.queue(this.proceed, this, this._result);
+        this.proceed(this._result);
       }
       return this;
     }
