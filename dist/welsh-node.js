@@ -595,6 +595,7 @@ var Welsh;
             if (this._branched) {
                 for (var i = 0, len = pendingHandlers.length; i < len; i++) {
                     pendingHandlers[i][state](settledResult);
+                    pendingHandlers[i] = undefined;
                 }
             }
             else {
@@ -695,6 +696,9 @@ var Welsh;
             do {
                 var then = getThenFunction(result);
                 if (then) {
+                    for (var i = this._pendingIndex; i < pendingIndex; i++) {
+                        pendingHandlers[i] = undefined;
+                    }
                     this._pendingIndex = pendingIndex;
                     this._state = Welsh.State.Resolving;
                     var self = this;

@@ -111,6 +111,10 @@ namespace Welsh {
       do {
         var then = getThenFunction(result);
         if ( then ) {
+          // free some references before we return control
+          for ( var i = this._pendingIndex; i < pendingIndex; i++ ) {
+            pendingHandlers[i] = undefined;
+          }
           this._pendingIndex = pendingIndex;
           this._state = State.Resolving;
           var self = this;

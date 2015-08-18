@@ -172,6 +172,7 @@ namespace Welsh {
       if ( this._branched ) {
         for ( var i = 0, len = pendingHandlers.length; i < len; i++ ) {
           (<Function[][]>pendingHandlers)[i][state](settledResult);
+          pendingHandlers[i] = undefined;
         }
       }
       else {
