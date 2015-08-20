@@ -17,7 +17,10 @@ namespace Welsh {
   import tryCall = Helpers.tryCall;
   import TryError = Helpers.TryError;
 
-  type PendingHandler = [Common, Fulfilled, Rejected];
+  class PendingHandler {
+    constructor(public onFulfilled: Fulfilled, public onRejected: Rejected) {}
+  }
+
   type PendingHandlers = PendingHandler[];
 
   export class Deferred extends Common {
@@ -59,16 +62,15 @@ namespace Welsh {
       }
       this._state = newState;
       this._result = result;
-      if ( this._pendingHandlers.length ) {
+      if ( this._pendingLength ) {
         this._running = true;
         GlobalScheduler.queue(this.proceed, this);
       }
     }
 
     public then(onFulfilled?: Fulfilled, onRejected?: Rejected): Deferred {
-      this._pendingHandlers[this._pendingLength++] = [
-        this, onFulfilled, onRejected
-      ];
+      var pending = new PendingHandler(onFulfilled, onRejected);
+      this._pendingHandlers[this._pendingLength++] = pending;
 
       if ( this._state && !this._running ) {
         this._running = true;
@@ -93,12 +95,18 @@ namespace Welsh {
           return;
         }
 
-        if ( pendingIndex >= pendingHandlers.length ) {
+        if ( pendingIndex >= this._pendingLength ) {
           break;
         }
 
-        var pending = pendingHandlers[pendingIndex++];
-        var callback = <FulfilledOrRejected>pending[state];
+        var pending: PendingHandler = pendingHandlers[pendingIndex++];
+        var callback: FulfilledOrRejected;
+        if ( state === State.Fulfilled ) {
+          callback = pending.onFulfilled;
+        }
+        else {
+          callback = pending.onRejected;
+        }
         if ( typeof callback === 'function' ) {
           result = tryCall(callback, result);
           if ( result === TryError ) {

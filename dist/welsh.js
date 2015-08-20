@@ -481,6 +481,7 @@ var Welsh;
         __extends(Promise, _super);
         function Promise(executor) {
             _super.call(this, executor);
+            this._pendingLength = 0;
             if (executor === noOp) {
                 return;
             }
@@ -555,27 +556,28 @@ var Welsh;
                 Welsh.GlobalScheduler.queue(this.settlePending, this, pending);
                 return;
             }
-            var pendingHandlers = this._pendingHandlers;
-            if (!pendingHandlers) {
+            var pendingLength = this._pendingLength;
+            if (pendingLength === 0) {
                 this._pendingHandlers = pending;
+                this._pendingLength = 1;
                 return;
             }
-            if (!this._branched) {
-                this._pendingHandlers = [pendingHandlers, pending];
-                this._branched = true;
+            if (this._pendingLength === 1) {
+                var pendingHandler = this._pendingHandlers;
+                this._pendingHandlers = [pendingHandler, pending];
+                this._pendingLength = 2;
                 return;
             }
-            pendingHandlers[pendingHandlers.length] = pending;
+            var pendingHandlers = this._pendingHandlers;
+            pendingHandlers[this._pendingLength++] = pending;
         };
         Promise.prototype.settlePending = function (pending) {
-            var state = this._state;
-            var target = pending[0];
-            var callback = pending[state];
-            if (state === Welsh.State.Fulfilled) {
-                target.resolvePending(this._result, callback);
+            var promise = pending[0];
+            if (this._state === Welsh.State.Fulfilled) {
+                promise.resolvePending(this._result, pending[1]);
             }
             else {
-                target.rejectPending(this._result, callback);
+                promise.rejectPending(this._result, pending[2]);
             }
         };
         Promise.prototype.resolvePending = function (result, onFulfilled) {
@@ -605,21 +607,23 @@ var Welsh;
             }
         };
         Promise.prototype.notifyPending = function () {
-            var pendingHandlers = this._pendingHandlers;
-            if (!pendingHandlers) {
+            var pendingLength = this._pendingLength;
+            if (pendingLength === 0) {
                 return;
             }
-            if (this._branched) {
-                for (var i = 0, len = pendingHandlers.length; i < len; i++) {
-                    this.settlePending(pendingHandlers[i]);
-                    pendingHandlers[i] = undefined;
-                }
+            if (pendingLength === 1) {
+                this.settlePending(this._pendingHandlers);
+                this._pendingLength = 0;
+                this._pendingHandlers = undefined;
+                return;
             }
-            else {
-                this.settlePending(pendingHandlers);
+            var pendingHandlers = this._pendingHandlers;
+            for (var i = 0, len = this._pendingLength; i < len; i++) {
+                this.settlePending(pendingHandlers[i]);
+                pendingHandlers[i] = undefined;
             }
             this._pendingHandlers = null;
-            this._branched = false;
+            this._pendingLength = 0;
         };
         return Promise;
     })(Welsh.Common);
@@ -634,6 +638,13 @@ var Welsh;
     var getThenFunction = Welsh.Helpers.getThenFunction;
     var tryCall = Welsh.Helpers.tryCall;
     var TryError = Welsh.Helpers.TryError;
+    var PendingHandler = (function () {
+        function PendingHandler(onFulfilled, onRejected) {
+            this.onFulfilled = onFulfilled;
+            this.onRejected = onRejected;
+        }
+        return PendingHandler;
+    })();
     var Deferred = (function (_super) {
         __extends(Deferred, _super);
         function Deferred(executor) {
@@ -663,15 +674,14 @@ var Welsh;
             }
             this._state = newState;
             this._result = result;
-            if (this._pendingHandlers.length) {
+            if (this._pendingLength) {
                 this._running = true;
                 Welsh.GlobalScheduler.queue(this.proceed, this);
             }
         };
         Deferred.prototype.then = function (onFulfilled, onRejected) {
-            this._pendingHandlers[this._pendingLength++] = [
-                this, onFulfilled, onRejected
-            ];
+            var pending = new PendingHandler(onFulfilled, onRejected);
+            this._pendingHandlers[this._pendingLength++] = pending;
             if (this._state && !this._running) {
                 this._running = true;
                 Welsh.GlobalScheduler.queue(this.proceed, this);
@@ -692,11 +702,17 @@ var Welsh;
                     then(fulfilledLinker, rejectedLinker);
                     return;
                 }
-                if (pendingIndex >= pendingHandlers.length) {
+                if (pendingIndex >= this._pendingLength) {
                     break;
                 }
                 var pending = pendingHandlers[pendingIndex++];
-                var callback = pending[state];
+                var callback;
+                if (state === Welsh.State.Fulfilled) {
+                    callback = pending.onFulfilled;
+                }
+                else {
+                    callback = pending.onRejected;
+                }
                 if (typeof callback === 'function') {
                     result = tryCall(callback, result);
                     if (result === TryError) {

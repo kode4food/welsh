@@ -17,14 +17,14 @@ namespace Welsh {
   import tryCall = Helpers.tryCall;
   import TryError = Helpers.TryError;
 
-  type PendingHandler = [Common, Resolve, Reject];
+  type PendingHandler = [Promise, Reject, Resolve];
   type PendingHandlers = PendingHandler | PendingHandler[];
 
   function noOp() {}
 
   export class Promise extends Common {
-    private _branched: boolean;
     private _pendingHandlers: PendingHandlers;
+    private _pendingLength: number = 0;
 
     constructor(executor: Executor) {
       super(executor);
@@ -115,30 +115,31 @@ namespace Welsh {
         return;
       }
 
-      var pendingHandlers: PendingHandlers = this._pendingHandlers;
-      if ( !pendingHandlers ) {
+      var pendingLength = this._pendingLength;
+      if ( pendingLength === 0 ) {
         this._pendingHandlers = pending;
+        this._pendingLength = 1;
         return;
       }
 
-      if ( !this._branched ) {
-        this._pendingHandlers = [<PendingHandler>pendingHandlers, pending];
-        this._branched = true;
+      if ( this._pendingLength === 1 ) {
+        var pendingHandler = <PendingHandler>this._pendingHandlers;
+        this._pendingHandlers = [pendingHandler, pending];
+        this._pendingLength = 2;
         return;
       }
 
-      pendingHandlers[pendingHandlers.length] = pending;
+      var pendingHandlers = <PendingHandler[]>this._pendingHandlers;
+      pendingHandlers[this._pendingLength++] = pending;
     }
 
-    protected settlePending(pending: any[]): void {
-      var state = this._state;
-      var target = pending[0];
-      var callback = pending[state];
-      if ( state === State.Fulfilled ) {
-        target.resolvePending(this._result, callback);
+    protected settlePending(pending: PendingHandler): void {
+      var promise = pending[0];
+      if ( this._state === State.Fulfilled ) {
+        promise.resolvePending(this._result, pending[1]);
       }
       else {
-        target.rejectPending(this._result, callback);
+        promise.rejectPending(this._result, pending[2]);
       }
     }
 
@@ -171,21 +172,25 @@ namespace Welsh {
     }
 
     private notifyPending(): void {
-      var pendingHandlers = this._pendingHandlers;
-      if ( !pendingHandlers ) {
+      var pendingLength = this._pendingLength;
+      if ( pendingLength === 0 ) {
         return;
       }
-      if ( this._branched ) {
-        for ( var i = 0, len = pendingHandlers.length; i < len; i++ ) {
-          this.settlePending((<PendingHandler[]>pendingHandlers)[i]);
-          pendingHandlers[i] = undefined;
-        }
+
+      if ( pendingLength === 1 ) {
+        this.settlePending(<PendingHandler>this._pendingHandlers);
+        this._pendingLength = 0;
+        this._pendingHandlers = undefined;
+        return;
       }
-      else {
-        this.settlePending(<PendingHandler>pendingHandlers);
+
+      var pendingHandlers = <PendingHandler[]>this._pendingHandlers;
+      for ( var i = 0, len = this._pendingLength; i < len; i++ ) {
+        this.settlePending((<PendingHandler[]>pendingHandlers)[i]);
+        pendingHandlers[i] = undefined;
       }
       this._pendingHandlers = null;
-      this._branched = false;
+      this._pendingLength = 0;
     }
   }
 }
