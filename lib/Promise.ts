@@ -17,7 +17,7 @@ namespace Welsh {
   import tryCall = Helpers.tryCall;
   import TryError = Helpers.TryError;
 
-  type PendingHandler = [Promise, Resolve, Reject];
+  type PendingHandler = [Common, Resolve, Reject];
   type PendingHandlers = PendingHandler | PendingHandler[];
 
   function noOp() {}

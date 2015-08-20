@@ -409,41 +409,41 @@ var Welsh;
         function Scheduler() {
             this._capacity = 16 * 3;
             this._isFlushing = false;
-            this._head = 0;
-            this._tail = 0;
+            this._queueIndex = 0;
+            this._queueLength = 0;
         }
         Scheduler.prototype.queue = function (callback, target, arg) {
             var _this = this;
-            var tail = this._tail;
-            this[tail] = callback;
-            this[tail + 1] = target;
-            this[tail + 2] = arg;
-            this._tail = tail + 3;
+            var queueLength = this._queueLength;
+            this[queueLength] = callback;
+            this[queueLength + 1] = target;
+            this[queueLength + 2] = arg;
+            this._queueLength = queueLength + 3;
             if (!this._isFlushing) {
                 this._isFlushing = true;
                 nextTick(function () { _this.flushQueue(); });
             }
         };
         Scheduler.prototype.collapseQueue = function () {
-            var head = this._head;
-            var tail = this._tail;
-            for (var i = 0, len = tail - head; i < len; i++) {
-                this[i] = this[head + i];
+            var queueIndex = this._queueIndex;
+            var queueLength = this._queueLength;
+            for (var i = 0, len = queueLength - queueIndex; i < len; i++) {
+                this[i] = this[queueIndex + i];
             }
-            while (i < tail) {
+            while (i < queueLength) {
                 this[i++] = undefined;
             }
-            this._head = 0;
-            this._tail = len;
+            this._queueIndex = 0;
+            this._queueLength = len;
         };
         Scheduler.prototype.flushQueue = function () {
-            while (this._head < this._tail) {
-                var head = this._head;
-                var callback = this[head];
-                var target = this[head + 1];
-                var arg = this[head + 2];
-                this._head = head + 3;
-                if (this._tail > this._capacity) {
+            while (this._queueIndex < this._queueLength) {
+                var queueIndex = this._queueIndex;
+                var callback = this[queueIndex];
+                var target = this[queueIndex + 1];
+                var arg = this[queueIndex + 2];
+                this._queueIndex = queueIndex + 3;
+                if (this._queueLength > this._capacity) {
                     this.collapseQueue();
                 }
                 callback.call(target, arg);
@@ -628,15 +628,14 @@ var Welsh;
     var getThenFunction = Welsh.Helpers.getThenFunction;
     var tryCall = Welsh.Helpers.tryCall;
     var TryError = Welsh.Helpers.TryError;
-    function noOp() { }
     var Deferred = (function (_super) {
         __extends(Deferred, _super);
         function Deferred(executor) {
             var _this = this;
             _super.call(this, executor);
-            this._pendingHandlers = {};
-            this._head = 0;
-            this._tail = 0;
+            this._pendingHandlers = [];
+            this._pendingIndex = 0;
+            this._pendingLength = 0;
             if (typeof executor !== 'function') {
                 this.reject(new Error("Deferred requires an Executor Function"));
                 return;
@@ -658,14 +657,14 @@ var Welsh;
             }
             this._state = newState;
             this._result = result;
-            if (this._tail > this._head) {
+            if (this._pendingHandlers.length) {
                 this._running = true;
                 Welsh.GlobalScheduler.queue(this.proceed, this);
             }
         };
         Deferred.prototype.then = function (onFulfilled, onRejected) {
-            this._pendingHandlers[this._tail++] = [
-                noOp, onFulfilled, onRejected
+            this._pendingHandlers[this._pendingLength++] = [
+                this, onFulfilled, onRejected
             ];
             if (this._state && !this._running) {
                 this._running = true;
@@ -675,22 +674,23 @@ var Welsh;
         };
         Deferred.prototype.proceed = function () {
             var pendingHandlers = this._pendingHandlers;
-            var head = this._head;
+            var pendingIndex = this._pendingIndex;
             var result = this._result;
             var state = this._state;
             do {
                 var then = getThenFunction(result);
                 if (then) {
-                    this._head = head;
+                    this._pendingIndex = pendingIndex;
                     this._state = Welsh.State.Resolving;
                     var self = this;
                     then(fulfilledLinker, rejectedLinker);
                     return;
                 }
-                if (head >= this._tail) {
+                if (pendingIndex >= pendingHandlers.length) {
                     break;
                 }
-                var callback = pendingHandlers[head++][state];
+                var pending = pendingHandlers[pendingIndex++];
+                var callback = pending[state];
                 if (typeof callback === 'function') {
                     result = tryCall(callback, result);
                     if (result === TryError) {
@@ -703,9 +703,9 @@ var Welsh;
                     }
                 }
             } while (true);
-            this._head = 0;
-            this._tail = 0;
-            this._pendingHandlers = {};
+            this._pendingIndex = 0;
+            this._pendingLength = 0;
+            this._pendingHandlers = [];
             this._running = false;
             function fulfilledLinker(result) {
                 self.continueWith(Welsh.State.Fulfilled, result);

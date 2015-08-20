@@ -17,17 +17,14 @@ namespace Welsh {
   import tryCall = Helpers.tryCall;
   import TryError = Helpers.TryError;
 
-  interface PendingHandlers {
-    [index: number]: FulfilledOrRejected[];
-  }
-
-  function noOp() {}
+  type PendingHandler = [Common, Fulfilled, Rejected];
+  type PendingHandlers = PendingHandler[];
 
   export class Deferred extends Common {
     private _running: boolean;
-    private _pendingHandlers: PendingHandlers = {};
-    private _head: number = 0;
-    private _tail: number = 0;
+    private _pendingHandlers: PendingHandlers = [];
+    private _pendingIndex: number = 0;
+    private _pendingLength: number = 0;
 
     constructor(executor: Executor) {
       super(executor);
@@ -62,15 +59,15 @@ namespace Welsh {
       }
       this._state = newState;
       this._result = result;
-      if ( this._tail > this._head ) {
+      if ( this._pendingHandlers.length ) {
         this._running = true;
         GlobalScheduler.queue(this.proceed, this);
       }
     }
 
     public then(onFulfilled?: Fulfilled, onRejected?: Rejected): Deferred {
-      this._pendingHandlers[this._tail++] = [
-        noOp, onFulfilled, onRejected
+      this._pendingHandlers[this._pendingLength++] = [
+        this, onFulfilled, onRejected
       ];
 
       if ( this._state && !this._running ) {
@@ -82,25 +79,26 @@ namespace Welsh {
 
     private proceed(): void {
       var pendingHandlers = this._pendingHandlers;
-      var head = this._head;
+      var pendingIndex = this._pendingIndex;
       var result = this._result;
       var state = this._state;
 
       do {
         var then = getThenFunction(result);
         if ( then ) {
-          this._head = head;
+          this._pendingIndex = pendingIndex;
           this._state = State.Resolving;
           var self = this;
           then(fulfilledLinker, rejectedLinker);
           return;
         }
 
-        if ( head >= this._tail ) {
+        if ( pendingIndex >= pendingHandlers.length ) {
           break;
         }
 
-        var callback = pendingHandlers[head++][state];
+        var pending = pendingHandlers[pendingIndex++];
+        var callback = <FulfilledOrRejected>pending[state];
         if ( typeof callback === 'function' ) {
           result = tryCall(callback, result);
           if ( result === TryError ) {
@@ -114,9 +112,9 @@ namespace Welsh {
         }
       }
       while ( true );
-      this._head = 0;
-      this._tail = 0;
-      this._pendingHandlers = {};
+      this._pendingIndex = 0;
+      this._pendingLength = 0;
+      this._pendingHandlers = [];
       this._running = false;
 
       function fulfilledLinker(result?: Result): Result {

@@ -27,15 +27,15 @@ namespace Welsh {
     [index: number]: any;
     private _capacity: number = 16 * 3;
     private _isFlushing: boolean = false;
-    private _head: number = 0;
-    private _tail: number = 0;
+    private _queueIndex: number = 0;
+    private _queueLength: number = 0;
 
     public queue(callback: Function, target?: Object, arg?: any): void {
-      var tail = this._tail;
-      this[tail] = callback;
-      this[tail + 1] = target;
-      this[tail + 2] = arg;
-      this._tail = tail + 3;
+      var queueLength = this._queueLength;
+      this[queueLength] = callback;
+      this[queueLength + 1] = target;
+      this[queueLength + 2] = arg;
+      this._queueLength = queueLength + 3;
       if ( !this._isFlushing ) {
         this._isFlushing = true;
         nextTick(() => { this.flushQueue() });
@@ -43,27 +43,27 @@ namespace Welsh {
     }
 
     private collapseQueue(): void {
-      var head = this._head;
-      var tail = this._tail;
-      for ( var i = 0, len = tail - head; i < len; i++ ) {
-        this[i] = this[head + i];
+      var queueIndex = this._queueIndex;
+      var queueLength = this._queueLength;
+      for ( var i = 0, len = queueLength - queueIndex; i < len; i++ ) {
+        this[i] = this[queueIndex + i];
       }
-      while ( i < tail ) {
+      while ( i < queueLength ) {
         this[i++] = undefined;
       }
-      this._head = 0;
-      this._tail = len;
+      this._queueIndex = 0;
+      this._queueLength = len;
     }
 
     private flushQueue(): void {
-      while ( this._head < this._tail ) {
-        var head = this._head;
-        var callback = this[head];
-        var target = this[head + 1];
-        var arg = this[head + 2];
-        this._head = head + 3;
+      while ( this._queueIndex < this._queueLength ) {
+        var queueIndex = this._queueIndex;
+        var callback = this[queueIndex];
+        var target = this[queueIndex + 1];
+        var arg = this[queueIndex + 2];
+        this._queueIndex = queueIndex + 3;
 
-        if ( this._tail > this._capacity ) {
+        if ( this._queueLength > this._capacity ) {
           this.collapseQueue();
         }
 
