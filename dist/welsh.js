@@ -275,10 +275,10 @@ var Welsh;
                 throw reason;
             }
         };
-        Common.prototype.catch = function (onRejected) {
+        Common.prototype["catch"] = function (onRejected) {
             return this.then(undefined, onRejected);
         };
-        Common.prototype.finally = function (onFinally) {
+        Common.prototype["finally"] = function (onFinally) {
             return this.done(onFinally, onFinally);
         };
         Common.prototype.toNode = function (callback) {

@@ -28,7 +28,6 @@ namespace Welsh {
   export type ResultOrReason = Result | Reason;
   export type Resolve = (result?: Result) => void;
   export type Reject = (reason?: Reason) => void;
-  export type ResolveOrReject = Resolve | Reject;
   export type Fulfilled = (result?: Result) => Result;
   export type Rejected = (reason?: Reason) => Result;
   export type FulfilledOrRejected = Fulfilled | Rejected;
@@ -128,11 +127,11 @@ namespace Welsh {
       }
     }
 
-    public catch(onRejected?: Rejected): Common {
+    public "catch"(onRejected?: Rejected): Common {
       return this.then(undefined, onRejected);
     }
 
-    public finally(onFinally?: Finalizer): Common {
+    public "finally"(onFinally?: Finalizer): Common {
       return this.done(onFinally, onFinally);
     }
 
