@@ -11,6 +11,12 @@
 namespace Welsh.Helpers {
   var objectToString = Object.prototype.toString;
 
+  interface ErrorInterface {
+    reason: any;
+  }
+
+  export var TryError: ErrorInterface = { reason: null };
+
   // TypeScript would prefer the polyfill
   if ( !Array.isArray ) {
     Array.isArray = function (obj: Object): boolean {
@@ -45,5 +51,15 @@ namespace Welsh.Helpers {
       return null;
     }
     return bindThis(then, value);
+  }
+
+  export function tryCall(func: Function, arg1?: any, arg2?: any): any {
+    try {
+      return func(arg1, arg2);
+    }
+    catch ( err ) {
+      TryError.reason = err;
+      return TryError;
+    }
   }
 }

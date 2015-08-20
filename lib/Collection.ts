@@ -14,7 +14,7 @@
 namespace Welsh.Collection {
   import getThenFunction = Helpers.getThenFunction;
 
-  type Processor = (array: any[], resolve: Resolver, reject: Rejecter) => void;
+  type Processor = (array: any[], resolve: Resolve, reject: Reject) => void;
 
   function process(instance: Common, processor: Processor): Common {
     var Constructor = <CommonConstructable>instance.constructor;

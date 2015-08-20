@@ -17,6 +17,7 @@ var Welsh;
     var Helpers;
     (function (Helpers) {
         var objectToString = Object.prototype.toString;
+        Helpers.TryError = { reason: null };
         if (!Array.isArray) {
             Array.isArray = function (obj) {
                 return obj && objectToString.call(obj) === '[object Array]';
@@ -49,6 +50,16 @@ var Welsh;
             return Helpers.bindThis(then, value);
         }
         Helpers.getThenFunction = getThenFunction;
+        function tryCall(func, arg1, arg2) {
+            try {
+                return func(arg1, arg2);
+            }
+            catch (err) {
+                Helpers.TryError.reason = err;
+                return Helpers.TryError;
+            }
+        }
+        Helpers.tryCall = tryCall;
     })(Helpers = Welsh.Helpers || (Welsh.Helpers = {}));
 })(Welsh || (Welsh = {}));
 /// <reference path="./Helpers.ts"/>
@@ -191,6 +202,8 @@ var Welsh;
 (function (Welsh) {
     var slice = Array.prototype.slice;
     var getThenFunction = Welsh.Helpers.getThenFunction;
+    var tryCall = Welsh.Helpers.tryCall;
+    var TryError = Welsh.Helpers.TryError;
     var createRace = Welsh.Collection.createRace;
     var createAll = Welsh.Collection.createAll;
     var createSome = Welsh.Collection.createSome;
@@ -234,51 +247,47 @@ var Welsh;
         Common.prototype.reject = function (reason) {
             throw new Error("Not implemented");
         };
-        Common.prototype.done = function (onFulfilled, onRejected) {
-            throw new Error("Not implemented");
-        };
         Common.prototype.then = function (onFulfilled, onRejected) {
             throw new Error("Not implemented");
+        };
+        Common.prototype.done = function (onFulfilled, onRejected) {
+            return this.then(wrapFulfilled, wrapRejected);
+            function wrapFulfilled(result) {
+                if (typeof onFulfilled !== 'function') {
+                    return result;
+                }
+                var tryResult = tryCall(onFulfilled, result);
+                if (tryResult === TryError) {
+                    var err = tryResult.reason;
+                    Welsh.GlobalScheduler.queue(function () { throw err; });
+                }
+                return result;
+            }
+            function wrapRejected(reason) {
+                if (typeof onRejected !== 'function') {
+                    throw reason;
+                }
+                var tryResult = tryCall(onRejected, reason);
+                if (tryResult === TryError) {
+                    var err = tryResult.reason;
+                    Welsh.GlobalScheduler.queue(function () { throw err; });
+                }
+                throw reason;
+            }
         };
         Common.prototype.catch = function (onRejected) {
             return this.then(undefined, onRejected);
         };
         Common.prototype.finally = function (onFinally) {
-            return this.then(onFulfilled, onRejected);
-            function onFulfilled(result) {
-                try {
-                    onFinally();
-                }
-                finally {
-                    return result;
-                }
-            }
-            function onRejected(reason) {
-                try {
-                    onFinally();
-                }
-                finally {
-                    throw reason;
-                }
-            }
+            return this.done(onFinally, onFinally);
         };
         Common.prototype.toNode = function (callback) {
-            return this.then(onFulfilled, onRejected);
+            return this.done(onFulfilled, onRejected);
             function onFulfilled(result) {
-                try {
-                    callback(null, result);
-                }
-                finally {
-                    return result;
-                }
+                callback(null, result);
             }
             function onRejected(reason) {
-                try {
-                    callback(reason);
-                }
-                finally {
-                    throw reason;
-                }
+                callback(reason);
             }
         };
         Common.prototype.toPromise = function () {
@@ -465,6 +474,8 @@ var __extends = (this && this.__extends) || function (d, b) {
 var Welsh;
 (function (Welsh) {
     var getThenFunction = Welsh.Helpers.getThenFunction;
+    var tryCall = Welsh.Helpers.tryCall;
+    var TryError = Welsh.Helpers.TryError;
     function noOp() { }
     var Promise = (function (_super) {
         __extends(Promise, _super);
@@ -487,19 +498,18 @@ var Welsh;
                 this.reject(new TypeError("Um, yeah, a Promise can't resolve itself"));
                 return;
             }
-            try {
-                var then = getThenFunction(result);
-                if (then) {
-                    this.doResolve(then);
-                    return;
-                }
-                this._state = Welsh.State.Fulfilled;
-                this._result = result;
-                Welsh.GlobalScheduler.queue(this.notifyPending, this);
+            var then = tryCall(getThenFunction, result);
+            if (then === TryError) {
+                this.reject(then.reason);
+                return;
             }
-            catch (err) {
-                this.reject(err);
+            else if (then) {
+                this.doResolve(then);
+                return;
             }
+            this._state = Welsh.State.Fulfilled;
+            this._result = result;
+            Welsh.GlobalScheduler.queue(this.notifyPending, this);
         };
         Promise.prototype.reject = function (reason) {
             if (this._state) {
@@ -512,14 +522,12 @@ var Welsh;
         Promise.prototype.doResolve = function (executor) {
             var self = this;
             var done;
-            try {
-                executor(onFulfilled, onRejected);
-            }
-            catch (err) {
+            var tryResult = tryCall(executor, onFulfilled, onRejected);
+            if (tryResult === TryError) {
                 if (done) {
                     return;
                 }
-                this.reject(err);
+                this.reject(tryResult.reason);
             }
             function onFulfilled(result) {
                 if (done) {
@@ -538,74 +546,77 @@ var Welsh;
         };
         Promise.prototype.then = function (onFulfilled, onRejected) {
             var promise = new Promise(noOp);
-            this.done(wrapFulfilled, wrapRejected);
+            this.addPending(promise, onFulfilled, onRejected);
             return promise;
-            function wrapFulfilled(result) {
-                if (typeof onFulfilled !== 'function') {
-                    promise.resolve(result);
-                    return;
-                }
-                try {
-                    promise.resolve(onFulfilled(result));
-                }
-                catch (err) {
-                    promise.reject(err);
-                }
-            }
-            function wrapRejected(reason) {
-                if (typeof onRejected !== 'function') {
-                    promise.reject(reason);
-                    return;
-                }
-                try {
-                    promise.resolve(onRejected(reason));
-                }
-                catch (err) {
-                    promise.reject(err);
-                }
-            }
         };
-        Promise.prototype.done = function (onFulfilled, onRejected) {
-            var state = this._state;
-            if (state) {
-                var callback;
-                if (state === Welsh.State.Fulfilled) {
-                    callback = onFulfilled;
-                }
-                else {
-                    callback = onRejected;
-                }
-                Welsh.GlobalScheduler.queue(callback, null, this._result);
+        Promise.prototype.addPending = function (target, onFulfilled, onRejected) {
+            var pending = [target, onFulfilled, onRejected];
+            if (this._state) {
+                Welsh.GlobalScheduler.queue(this.settlePending, this, pending);
                 return;
             }
-            var item = [undefined, onFulfilled, onRejected];
             var pendingHandlers = this._pendingHandlers;
             if (!pendingHandlers) {
-                this._pendingHandlers = item;
+                this._pendingHandlers = pending;
                 return;
             }
             if (!this._branched) {
-                this._pendingHandlers = [pendingHandlers, item];
+                this._pendingHandlers = [pendingHandlers, pending];
                 this._branched = true;
                 return;
             }
-            pendingHandlers[pendingHandlers.length] = item;
+            pendingHandlers[pendingHandlers.length] = pending;
+        };
+        Promise.prototype.settlePending = function (pending) {
+            var state = this._state;
+            var target = pending[0];
+            var callback = pending[state];
+            if (state === Welsh.State.Fulfilled) {
+                target.resolvePending(this._result, callback);
+            }
+            else {
+                target.rejectPending(this._result, callback);
+            }
+        };
+        Promise.prototype.resolvePending = function (result, onFulfilled) {
+            if (typeof onFulfilled !== 'function') {
+                this.resolve(result);
+                return;
+            }
+            var tryResult = tryCall(onFulfilled, result);
+            if (tryResult === TryError) {
+                this.reject(tryResult.reason);
+            }
+            else {
+                this.resolve(tryResult);
+            }
+        };
+        Promise.prototype.rejectPending = function (reason, onRejected) {
+            if (typeof onRejected !== 'function') {
+                this.reject(reason);
+                return;
+            }
+            var tryResult = tryCall(onRejected, reason);
+            if (tryResult === TryError) {
+                this.reject(tryResult.reason);
+            }
+            else {
+                this.resolve(tryResult);
+            }
         };
         Promise.prototype.notifyPending = function () {
             var pendingHandlers = this._pendingHandlers;
             if (!pendingHandlers) {
                 return;
             }
-            var state = this._state;
-            var settledResult = this._result;
             if (this._branched) {
                 for (var i = 0, len = pendingHandlers.length; i < len; i++) {
-                    pendingHandlers[i][state](settledResult);
+                    this.settlePending(pendingHandlers[i]);
                     pendingHandlers[i] = undefined;
                 }
             }
             else {
-                pendingHandlers[state](settledResult);
+                this.settlePending(pendingHandlers);
             }
             this._pendingHandlers = null;
             this._branched = false;
@@ -621,22 +632,24 @@ var Welsh;
 var Welsh;
 (function (Welsh) {
     var getThenFunction = Welsh.Helpers.getThenFunction;
+    var tryCall = Welsh.Helpers.tryCall;
+    var TryError = Welsh.Helpers.TryError;
+    function noOp() { }
     var Deferred = (function (_super) {
         __extends(Deferred, _super);
         function Deferred(executor) {
             var _this = this;
             _super.call(this, executor);
-            this._pendingHandlers = [];
-            this._pendingIndex = 0;
+            this._pendingHandlers = {};
+            this._head = 0;
+            this._tail = 0;
             if (typeof executor !== 'function') {
                 this.reject(new Error("Deferred requires an Executor Function"));
                 return;
             }
-            try {
-                executor(function (result) { _this.resolve(result); }, function (reason) { _this.reject(reason); });
-            }
-            catch (err) {
-                this.reject(err);
+            var tryResult = tryCall(executor, function (result) { _this.resolve(result); }, function (reason) { _this.reject(reason); });
+            if (tryResult === TryError) {
+                this.reject(tryResult.reason);
             }
         }
         Deferred.prototype.resolve = function (result) {
@@ -651,15 +664,14 @@ var Welsh;
             }
             this._state = newState;
             this._result = result;
-            if (this._pendingHandlers.length > 0) {
+            if (this._tail > this._head) {
                 this._running = true;
                 Welsh.GlobalScheduler.queue(this.proceed, this);
             }
         };
         Deferred.prototype.then = function (onFulfilled, onRejected) {
-            var pendingHandlers = this._pendingHandlers;
-            pendingHandlers[pendingHandlers.length] = [
-                undefined, onFulfilled, onRejected
+            this._pendingHandlers[this._tail++] = [
+                noOp, onFulfilled, onRejected
             ];
             if (this._state && !this._running) {
                 this._running = true;
@@ -667,67 +679,39 @@ var Welsh;
             }
             return this;
         };
-        Deferred.prototype.done = function (onFulfilled, onRejected) {
-            this.then(wrapFulfilled, wrapRejected);
-            function wrapFulfilled(result) {
-                if (typeof onFulfilled !== 'function') {
-                    return result;
-                }
-                try {
-                    onFulfilled(result);
-                }
-                catch (err) {
-                    Welsh.GlobalScheduler.queue(function () { throw err; });
-                    return result;
-                }
-            }
-            function wrapRejected(reason) {
-                if (typeof onRejected !== 'function') {
-                    throw reason;
-                }
-                try {
-                    onRejected(reason);
-                }
-                catch (err) {
-                    Welsh.GlobalScheduler.queue(function () { throw err; });
-                    throw reason;
-                }
-            }
-        };
         Deferred.prototype.proceed = function () {
             var pendingHandlers = this._pendingHandlers;
-            var pendingIndex = this._pendingIndex;
+            var head = this._head;
             var result = this._result;
             var state = this._state;
             do {
                 var then = getThenFunction(result);
                 if (then) {
-                    for (var i = this._pendingIndex; i < pendingIndex; i++) {
-                        pendingHandlers[i] = undefined;
-                    }
-                    this._pendingIndex = pendingIndex;
+                    this._head = head;
                     this._state = Welsh.State.Resolving;
                     var self = this;
                     then(fulfilledLinker, rejectedLinker);
                     return;
                 }
-                if (pendingIndex >= pendingHandlers.length) {
+                if (head >= this._tail) {
                     break;
                 }
-                var callback = pendingHandlers[pendingIndex++][state];
+                var callback = pendingHandlers[head++][state];
                 if (typeof callback === 'function') {
-                    try {
-                        this._result = result = callback(result);
-                        this._state = state = Welsh.State.Fulfilled;
-                    }
-                    catch (reason) {
-                        this._result = result = reason;
+                    result = tryCall(callback, result);
+                    if (result === TryError) {
+                        this._result = result = result.reason;
                         this._state = state = Welsh.State.Rejected;
+                    }
+                    else {
+                        this._result = result;
+                        this._state = state = Welsh.State.Fulfilled;
                     }
                 }
             } while (true);
-            this._pendingHandlers = [];
-            this._pendingIndex = 0;
+            this._head = 0;
+            this._tail = 0;
+            this._pendingHandlers = {};
             this._running = false;
             function fulfilledLinker(result) {
                 self.continueWith(Welsh.State.Fulfilled, result);

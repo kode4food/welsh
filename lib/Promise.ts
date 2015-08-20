@@ -14,12 +14,17 @@
 
 namespace Welsh {
   import getThenFunction = Helpers.getThenFunction;
+  import tryCall = Helpers.tryCall;
+  import TryError = Helpers.TryError;
+
+  type PendingHandler = [Promise, Resolve, Reject];
+  type PendingHandlers = PendingHandler | PendingHandler[];
 
   function noOp() {}
 
   export class Promise extends Common {
     private _branched: boolean;
-    private _pendingHandlers: Function[] | Function[][];
+    private _pendingHandlers: PendingHandlers;
 
     constructor(executor: Executor) {
       super(executor);
@@ -43,19 +48,18 @@ namespace Welsh {
         this.reject(new TypeError("Um, yeah, a Promise can't resolve itself"));
         return;
       }
-      try {
-        var then = getThenFunction(result);
-        if ( then ) {
-          this.doResolve(then);
-          return;
-        }
-        this._state = State.Fulfilled;
-        this._result = result;
-        GlobalScheduler.queue(this.notifyPending, this);
+      var then = tryCall(getThenFunction, result);
+      if ( then === TryError ) {
+        this.reject(then.reason);
+        return;
       }
-      catch ( err ) {
-        this.reject(err);
+      else if ( then ) {
+        this.doResolve(then);
+        return;
       }
+      this._state = State.Fulfilled;
+      this._result = result;
+      GlobalScheduler.queue(this.notifyPending, this);
     }
 
     public reject(reason?: Reason): void {
@@ -71,14 +75,12 @@ namespace Welsh {
       var self = this;
       var done: boolean;
 
-      try {
-        executor(onFulfilled, onRejected);
-      }
-      catch ( err ) {
+      var tryResult = tryCall(executor, onFulfilled, onRejected);
+      if ( tryResult === TryError ) {
         if ( done ) {
           return;
         }
-        this.reject(err);
+        this.reject(tryResult.reason);
       }
 
       function onFulfilled(result?: Result): void {
@@ -98,68 +100,74 @@ namespace Welsh {
       }
     }
 
-    public then(onFulfilled?: Resolver, onRejected?: Rejecter): Promise {
+    public then(onFulfilled?: Fulfilled, onRejected?: Rejected): Promise {
       var promise = new Promise(noOp);
-      this.done(wrapFulfilled, wrapRejected);
+      this.addPending(promise, onFulfilled, onRejected);
       return promise;
-
-      function wrapFulfilled(result?: Result): void {
-        if ( typeof onFulfilled !== 'function' ) {
-          promise.resolve(result);
-          return;
-        }
-        try {
-          promise.resolve(onFulfilled(result));
-        }
-        catch ( err ) {
-          promise.reject(err);
-        }
-      }
-
-      function wrapRejected(reason?: Reason): void {
-        if ( typeof onRejected !== 'function' ) {
-          promise.reject(reason);
-          return;
-        }
-        try {
-          promise.resolve(onRejected(reason));
-        }
-        catch ( err ) {
-          promise.reject(err);
-        }
-      }
     }
 
-    public done(onFulfilled?: Resolver, onRejected?: Rejecter): void {
-      var state = this._state;
-      if ( state ) {
-        var callback: Function;
-        if ( state === State.Fulfilled ) {
-          callback = onFulfilled;
-        }
-        else {
-          callback = onRejected;
-        }
+    protected addPending(target: Promise, onFulfilled: Resolve,
+                         onRejected: Reject): void {
+      var pending: PendingHandler = [target, onFulfilled, onRejected];
 
-        GlobalScheduler.queue(callback, null, this._result);
+      if ( this._state ) {
+        GlobalScheduler.queue(this.settlePending, this, pending);
         return;
       }
 
-      var item = [undefined, onFulfilled, onRejected];
-
-      var pendingHandlers = this._pendingHandlers;
+      var pendingHandlers: PendingHandlers = this._pendingHandlers;
       if ( !pendingHandlers ) {
-        this._pendingHandlers = item;
+        this._pendingHandlers = pending;
         return;
       }
 
       if ( !this._branched ) {
-        this._pendingHandlers = [<Function[]>pendingHandlers, item];
+        this._pendingHandlers = [<PendingHandler>pendingHandlers, pending];
         this._branched = true;
         return;
       }
 
-      pendingHandlers[pendingHandlers.length] = item;
+      pendingHandlers[pendingHandlers.length] = pending;
+    }
+
+    protected settlePending(pending: any[]): void {
+      var state = this._state;
+      var target = pending[0];
+      var callback = pending[state];
+      if ( state === State.Fulfilled ) {
+        target.resolvePending(this._result, callback);
+      }
+      else {
+        target.rejectPending(this._result, callback);
+      }
+    }
+
+    protected resolvePending(result?: Result, onFulfilled?: Fulfilled): void {
+      if ( typeof onFulfilled !== 'function' ) {
+        this.resolve(result);
+        return;
+      }
+      var tryResult = tryCall(onFulfilled, result);
+      if ( tryResult === TryError ) {
+        this.reject(tryResult.reason);
+      }
+      else {
+        this.resolve(tryResult);
+      }
+    }
+
+    protected rejectPending(reason?: Reason, onRejected?: Rejected): void {
+      if ( typeof onRejected !== 'function' ) {
+        this.reject(reason);
+        return;
+      }
+      var tryResult = tryCall(onRejected, reason);
+      if ( tryResult === TryError ) {
+        this.reject(tryResult.reason);
+      }
+      else {
+        this.resolve(tryResult);
+      }
     }
 
     private notifyPending(): void {
@@ -167,16 +175,14 @@ namespace Welsh {
       if ( !pendingHandlers ) {
         return;
       }
-      var state = this._state;
-      var settledResult = this._result;
       if ( this._branched ) {
         for ( var i = 0, len = pendingHandlers.length; i < len; i++ ) {
-          (<Function[][]>pendingHandlers)[i][state](settledResult);
+          this.settlePending((<PendingHandler[]>pendingHandlers)[i]);
           pendingHandlers[i] = undefined;
         }
       }
       else {
-        (<Function[]>pendingHandlers)[state](settledResult);
+        this.settlePending(<PendingHandler>pendingHandlers);
       }
       this._pendingHandlers = null;
       this._branched = false;

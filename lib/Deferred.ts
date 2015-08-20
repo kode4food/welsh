@@ -14,11 +14,20 @@
 
 namespace Welsh {
   import getThenFunction = Helpers.getThenFunction;
+  import tryCall = Helpers.tryCall;
+  import TryError = Helpers.TryError;
+
+  interface PendingHandlers {
+    [index: number]: FulfilledOrRejected[];
+  }
+
+  function noOp() {}
 
   export class Deferred extends Common {
     private _running: boolean;
-    private _pendingHandlers: Function[][] = [];
-    private _pendingIndex = 0;
+    private _pendingHandlers: PendingHandlers = {};
+    private _head: number = 0;
+    private _tail: number = 0;
 
     constructor(executor: Executor) {
       super(executor);
@@ -28,14 +37,14 @@ namespace Welsh {
         return;
       }
 
-      try {
-        executor(
-          (result?: Result) => { this.resolve(result); },
-          (reason?: Reason) => { this.reject(reason); }
-        );
-      }
-      catch ( err ) {
-        this.reject(err);
+      var tryResult = tryCall(
+        executor,
+        (result?: Result) => { this.resolve(result); },
+        (reason?: Reason) => { this.reject(reason); }
+      );
+
+      if ( tryResult === TryError ) {
+        this.reject(tryResult.reason);
       }
     }
 
@@ -53,16 +62,15 @@ namespace Welsh {
       }
       this._state = newState;
       this._result = result;
-      if ( this._pendingHandlers.length > 0 ) {
+      if ( this._tail > this._head ) {
         this._running = true;
         GlobalScheduler.queue(this.proceed, this);
       }
     }
 
-    public then(onFulfilled?: Resolver, onRejected?: Rejecter): Deferred {
-      var pendingHandlers = this._pendingHandlers;
-      pendingHandlers[pendingHandlers.length] = [
-        undefined, onFulfilled, onRejected
+    public then(onFulfilled?: Fulfilled, onRejected?: Rejected): Deferred {
+      this._pendingHandlers[this._tail++] = [
+        noOp, onFulfilled, onRejected
       ];
 
       if ( this._state && !this._running ) {
@@ -72,75 +80,43 @@ namespace Welsh {
       return this;
     }
 
-    public done(onFulfilled?: Resolver, onRejected?: Rejecter): void {
-      this.then(wrapFulfilled, wrapRejected);
-
-      function wrapFulfilled(result?: Result): Result {
-        if ( typeof onFulfilled !== 'function' ) {
-          return result;
-        }
-        try {
-          onFulfilled(result);
-        }
-        catch (err) {
-          GlobalScheduler.queue(() => { throw err; });
-          return result;
-        }
-      }
-
-      function wrapRejected(reason?: Reason): Result {
-        if ( typeof onRejected !== 'function' ) {
-          throw reason;
-        }
-        try {
-          onRejected(reason);
-        }
-        catch (err) {
-          GlobalScheduler.queue(() => { throw err; });
-          throw reason;
-        }
-      }
-    }
-
     private proceed(): void {
       var pendingHandlers = this._pendingHandlers;
-      var pendingIndex = this._pendingIndex;
+      var head = this._head;
       var result = this._result;
       var state = this._state;
 
       do {
         var then = getThenFunction(result);
         if ( then ) {
-          // free some references before we return control
-          for ( var i = this._pendingIndex; i < pendingIndex; i++ ) {
-            pendingHandlers[i] = undefined;
-          }
-          this._pendingIndex = pendingIndex;
+          this._head = head;
           this._state = State.Resolving;
           var self = this;
           then(fulfilledLinker, rejectedLinker);
           return;
         }
 
-        if ( pendingIndex >= pendingHandlers.length ) {
+        if ( head >= this._tail ) {
           break;
         }
 
-        var callback = pendingHandlers[pendingIndex++][state];
+        var callback = pendingHandlers[head++][state];
         if ( typeof callback === 'function' ) {
-          try {
-            this._result = result = callback(result);
-            this._state = state = State.Fulfilled;
-          }
-          catch ( reason ) {
-            this._result = result = reason;
+          result = tryCall(callback, result);
+          if ( result === TryError ) {
+            this._result = result = result.reason;
             this._state = state = State.Rejected;
+          }
+          else {
+            this._result = result;
+            this._state = state = State.Fulfilled;
           }
         }
       }
       while ( true );
-      this._pendingHandlers = [];
-      this._pendingIndex = 0;
+      this._head = 0;
+      this._tail = 0;
+      this._pendingHandlers = {};
       this._running = false;
 
       function fulfilledLinker(result?: Result): Result {

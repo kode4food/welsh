@@ -15,6 +15,8 @@ namespace Welsh {
   var slice = Array.prototype.slice;
 
   import getThenFunction = Helpers.getThenFunction;
+  import tryCall = Helpers.tryCall;
+  import TryError = Helpers.TryError;
   import createRace = Collection.createRace;
   import createAll = Collection.createAll;
   import createSome = Collection.createSome;
@@ -24,10 +26,14 @@ namespace Welsh {
   export type Reason = any;
   export type ResultOrArray = Result | any[];
   export type ResultOrReason = Result | Reason;
-  export type Resolver = (result?: Result) => void;
-  export type Rejecter = (reason?: Reason) => void;
+  export type Resolve = (result?: Result) => void;
+  export type Reject = (reason?: Reason) => void;
+  export type ResolveOrReject = Resolve | Reject;
+  export type Fulfilled = (result?: Result) => Result;
+  export type Rejected = (reason?: Reason) => Result;
+  export type FulfilledOrRejected = Fulfilled | Rejected;
   export type Finalizer = () => void;
-  export type Executor = (resolve: Resolver, reject: Rejecter) => void;
+  export type Executor = (resolve: Resolve, reject: Reject) => void;
   export type NodeCallback = (err: any, arg?: any) => void;
 
   export enum State {
@@ -37,7 +43,7 @@ namespace Welsh {
   }
 
   export interface Thenable {
-    then(onFulfilled?: Resolver, onRejected?: Rejecter): Thenable;
+    then(onFulfilled?: Fulfilled, onRejected?: Rejected): Thenable;
   }
 
   export interface CommonConstructable {
@@ -90,59 +96,55 @@ namespace Welsh {
       throw new Error("Not implemented");
     }
 
-    public done(onFulfilled?: Resolver, onRejected?: Rejecter): void {
+    public then(onFulfilled?: Fulfilled, onRejected?: Rejected): Common {
       throw new Error("Not implemented");
     }
 
-    public then(onFulfilled?: Resolver, onRejected?: Rejecter): Common {
-      throw new Error("Not implemented");
+    public done(onFulfilled?: Resolve, onRejected?: Reject): Common {
+      return this.then(wrapFulfilled, wrapRejected);
+
+      function wrapFulfilled(result?: Result): Result {
+        if ( typeof onFulfilled !== 'function' ) {
+          return result;
+        }
+        var tryResult = tryCall(onFulfilled, result);
+        if ( tryResult === TryError ) {
+          var err = tryResult.reason;
+          GlobalScheduler.queue(() => { throw err; });
+        }
+        return result;
+      }
+
+      function wrapRejected(reason?: Reason): Result {
+        if ( typeof onRejected !== 'function' ) {
+          throw reason;
+        }
+        var tryResult = tryCall(onRejected, reason);
+        if ( tryResult === TryError ) {
+          var err = tryResult.reason;
+          GlobalScheduler.queue(() => { throw err; });
+        }
+        throw reason;
+      }
     }
 
-    public catch(onRejected?: Rejecter): Common {
+    public catch(onRejected?: Rejected): Common {
       return this.then(undefined, onRejected);
     }
 
     public finally(onFinally?: Finalizer): Common {
-      return this.then(onFulfilled, onRejected);
-
-      function onFulfilled(result?: Result): Result {
-        try {
-          onFinally();
-        }
-        finally {
-          return result;
-        }
-      }
-
-      function onRejected(reason?: Reason): Result {
-        try {
-          onFinally();
-        }
-        finally {
-          throw reason;
-        }
-      }
+      return this.done(onFinally, onFinally);
     }
 
     public toNode(callback: NodeCallback): Common {
-      return this.then(onFulfilled, onRejected);
+      return this.done(onFulfilled, onRejected);
 
       function onFulfilled(result?: Result): Result {
-        try {
-          callback(null, result);
-        }
-        finally {
-          return result;
-        }
+        callback(null, result);
       }
 
       function onRejected(reason?: Reason): Result {
-        try {
-          callback(reason);
-        }
-        finally {
-          throw reason;
-        }
+        callback(reason);
       }
     }
 
@@ -223,8 +225,8 @@ namespace Welsh {
     }
 
     static lazy(executor: Executor): Common {
-      var resolve: Resolver;
-      var reject: Rejecter;
+      var resolve: Resolve;
+      var reject: Reject;
       var called: boolean;
 
       var deferred = new this(function (_resolve, _reject) {
@@ -247,7 +249,7 @@ namespace Welsh {
   }
 
   function convertUsing(deferred: Thenable, constructor: CommonConstructable) {
-    return new constructor(function (resolve: Resolver, reject: Rejecter) {
+    return new constructor(function (resolve: Resolve, reject: Reject) {
       var then = getThenFunction(deferred);
       then(onFulfilled, onRejected);
 
