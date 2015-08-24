@@ -1,5 +1,6 @@
 /// <reference path="./Helpers.ts"/>
 /// <reference path="./Collection.ts"/>
+/// <reference path="./Scheduler.ts"/>
 
 /*
  * Welsh (Promises, but not really)
