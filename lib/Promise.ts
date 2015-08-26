@@ -17,7 +17,7 @@ namespace Welsh {
   import tryCall = Helpers.tryCall;
   import TryError = Helpers.TryError;
 
-  type PendingHandler = [Promise, Reject, Resolve];
+  type PendingHandler = [Promise, Resolve, Reject];
   type PendingHandlers = PendingHandler | PendingHandler[];
 
   function noOp() {}
@@ -111,7 +111,9 @@ namespace Welsh {
       var pending: PendingHandler = [target, onFulfilled, onRejected];
 
       if ( this._state ) {
-        GlobalScheduler.queue(this.settlePending, this, pending);
+        GlobalScheduler.queue(() => {
+          this.settlePending(pending);
+        });
         return;
       }
 
@@ -189,7 +191,7 @@ namespace Welsh {
         this.settlePending((<PendingHandler[]>pendingHandlers)[i]);
         pendingHandlers[i] = undefined;
       }
-      this._pendingHandlers = null;
+      this._pendingHandlers = undefined;
       this._pendingLength = 0;
     }
   }

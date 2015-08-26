@@ -110,7 +110,9 @@ namespace Welsh {
         var tryResult = tryCall(onFulfilled, result);
         if ( tryResult === TryError ) {
           var err = tryResult.reason;
-          GlobalScheduler.queue(() => { throw err; });
+          GlobalScheduler.queue(() => {
+            throw err;
+          });
         }
         return result;
       }
@@ -122,7 +124,9 @@ namespace Welsh {
         var tryResult = tryCall(onRejected, reason);
         if ( tryResult === TryError ) {
           var err = tryResult.reason;
-          GlobalScheduler.queue(() => { throw err; });
+          GlobalScheduler.queue(() => {
+            throw err;
+          });
         }
         throw reason;
       }

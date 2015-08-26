@@ -220,18 +220,17 @@ var Welsh;
     }());
     var Scheduler = (function () {
         function Scheduler() {
-            this._capacity = 16 * 3;
+            this._capacity = 16 * 2;
             this._isFlushing = false;
             this._queueIndex = 0;
             this._queueLength = 0;
         }
-        Scheduler.prototype.queue = function (callback, target, arg) {
+        Scheduler.prototype.queue = function (callback, target) {
             var _this = this;
             var queueLength = this._queueLength;
             this[queueLength] = callback;
             this[queueLength + 1] = target;
-            this[queueLength + 2] = arg;
-            this._queueLength = queueLength + 3;
+            this._queueLength = queueLength + 2;
             if (!this._isFlushing) {
                 this._isFlushing = true;
                 nextTick(function () { _this.flushQueue(); });
@@ -254,12 +253,11 @@ var Welsh;
                 var queueIndex = this._queueIndex;
                 var callback = this[queueIndex];
                 var target = this[queueIndex + 1];
-                var arg = this[queueIndex + 2];
-                this._queueIndex = queueIndex + 3;
+                this._queueIndex = queueIndex + 2;
                 if (this._queueLength > this._capacity) {
                     this.collapseQueue();
                 }
-                callback.call(target, arg);
+                callback.call(target);
             }
             this._isFlushing = false;
         };
@@ -333,7 +331,9 @@ var Welsh;
                 var tryResult = tryCall(onFulfilled, result);
                 if (tryResult === TryError) {
                     var err = tryResult.reason;
-                    Welsh.GlobalScheduler.queue(function () { throw err; });
+                    Welsh.GlobalScheduler.queue(function () {
+                        throw err;
+                    });
                 }
                 return result;
             }
@@ -344,7 +344,9 @@ var Welsh;
                 var tryResult = tryCall(onRejected, reason);
                 if (tryResult === TryError) {
                     var err = tryResult.reason;
-                    Welsh.GlobalScheduler.queue(function () { throw err; });
+                    Welsh.GlobalScheduler.queue(function () {
+                        throw err;
+                    });
                 }
                 throw reason;
             }
@@ -552,9 +554,12 @@ var Welsh;
             return promise;
         };
         Promise.prototype.addPending = function (target, onFulfilled, onRejected) {
+            var _this = this;
             var pending = [target, onFulfilled, onRejected];
             if (this._state) {
-                Welsh.GlobalScheduler.queue(this.settlePending, this, pending);
+                Welsh.GlobalScheduler.queue(function () {
+                    _this.settlePending(pending);
+                });
                 return;
             }
             var pendingLength = this._pendingLength;
@@ -623,7 +628,7 @@ var Welsh;
                 this.settlePending(pendingHandlers[i]);
                 pendingHandlers[i] = undefined;
             }
-            this._pendingHandlers = null;
+            this._pendingHandlers = undefined;
             this._pendingLength = 0;
         };
         return Promise;

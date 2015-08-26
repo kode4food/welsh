@@ -25,17 +25,16 @@ namespace Welsh {
 
   export class Scheduler {
     [index: number]: any;
-    private _capacity: number = 16 * 3;
+    private _capacity: number = 16 * 2;
     private _isFlushing: boolean = false;
     private _queueIndex: number = 0;
     private _queueLength: number = 0;
 
-    public queue(callback: Function, target?: Object, arg?: any): void {
+    public queue(callback: Function, target?: Object): void {
       var queueLength = this._queueLength;
       this[queueLength] = callback;
       this[queueLength + 1] = target;
-      this[queueLength + 2] = arg;
-      this._queueLength = queueLength + 3;
+      this._queueLength = queueLength + 2;
       if ( !this._isFlushing ) {
         this._isFlushing = true;
         nextTick(() => { this.flushQueue() });
@@ -60,14 +59,13 @@ namespace Welsh {
         var queueIndex = this._queueIndex;
         var callback = this[queueIndex];
         var target = this[queueIndex + 1];
-        var arg = this[queueIndex + 2];
-        this._queueIndex = queueIndex + 3;
+        this._queueIndex = queueIndex + 2;
 
         if ( this._queueLength > this._capacity ) {
           this.collapseQueue();
         }
 
-        callback.call(target, arg);
+        callback.call(target);
       }
       this._isFlushing = false;
     }
