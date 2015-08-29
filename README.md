@@ -108,6 +108,8 @@ The Promise or Deferred that is returned will be an Object that contains several
 
 `.then(onFulfilled?:Function, onRejected?:Function)` - In the case of a Promise, creates a Promise whose value depends on its parent. In the case of a Deferred, adds an onFulfilled and/or onRejected handler to the dispatch chain.
 
+`.done(onFulfilled?:Function, onRejected?:Function)` - Like `then()` but doesn't return a new Promise or Deferred.  Also, any uncaught exceptions inside one of its callbacks will be thrown uncaught on the next clock tick.
+
 `.catch(onRejected?:Function)` - Same as 'then' except that only an `onRejected` callback is provided.
 
 `.finally(onFinally?:Function)` - Will call the onFinally callback when the parent Promise or Deferred is either fulfilled or rejected.  Will not interrupt or modify further processing.
@@ -117,6 +119,8 @@ The Promise or Deferred that is returned will be an Object that contains several
 `.toPromise()` - Converts the current Promise or Deferred into a new Promise (mostly useful for Deferreds).
 
 `.toDeferred()` - Converts the current Promise or Deferred into a new Deferred.
+
+`.path(path:index[])` - Deeply traverses nested Arrays or Objects to retrieve a value, resolving any Promises or Deferreds it encounters along the away.  Example: `userProfile.path(['personal', 'addresses', 0, 'city']);`
 
 `.all()` - Creates a new Promise or Deferred whose eventually fulfilled value will be an Array containing the fulfilled results of each provided Promise or Deferred.
 
@@ -146,7 +150,7 @@ The `welsh.Promise` and `welsh.Deferred` interfaces also expose some additional 
 
 `fromNode(nodeFunc:Function)` - Converts a Node-style Function that accepts a callback to one that instead returns a Promise or Deferred.
 
-In addition to these functions, versions of `all()`, `race()`, `some()`, and `any()` are provided.  These versions require an initial promise or Array from which to bootstrap.
+In addition to these functions, versions of `path()`, `all()`, `race()`, `some()`, and `any()` are provided.  These versions require an initial promise or Array from which to bootstrap.
 
 For example:
 

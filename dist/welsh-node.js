@@ -12,7 +12,6 @@ var Welsh;
     (function (Helpers) {
         var objectToString = Object.prototype.toString;
         Helpers.TryError = { reason: null };
-        // TypeScript would prefer the polyfill
         if (!Array.isArray) {
             Array.isArray = function (obj) {
                 return obj && objectToString.call(obj) === '[object Array]';
@@ -59,13 +58,6 @@ var Welsh;
 })(Welsh || (Welsh = {}));
 /// <reference path="./Helpers.ts"/>
 /// <reference path="./Common.ts"/>
-/*
- * Welsh (Promises, but not really)
- * Licensed under the MIT License
- * see LICENSE.md
- *
- * @author Thomas S. Bradford (kode4food.it)
- */
 "use strict";
 var Welsh;
 (function (Welsh) {
@@ -108,13 +100,6 @@ var Welsh;
 })(Welsh || (Welsh = {}));
 /// <reference path="./Helpers.ts"/>
 /// <reference path="./Common.ts"/>
-/*
- * Welsh (Promises, but not really)
- * Licensed under the MIT License
- * see LICENSE.md
- *
- * @author Thomas S. Bradford (kode4food.it)
- */
 "use strict";
 var Welsh;
 (function (Welsh) {
@@ -321,13 +306,6 @@ var Welsh;
 /// <reference path="./Property.ts"/>
 /// <reference path="./Collection.ts"/>
 /// <reference path="./Scheduler.ts"/>
-/*
- * Welsh (Promises, but not really)
- * Licensed under the MIT License
- * see LICENSE.md
- *
- * @author Thomas S. Bradford (kode4food.it)
- */
 "use strict";
 var Welsh;
 (function (Welsh) {
@@ -348,7 +326,6 @@ var Welsh;
     var State = Welsh.State;
     var Common = (function () {
         function Common(executor) {
-            // no-op
         }
         Common.prototype.isPending = function () {
             return !(this._state && this._state !== State.Resolving);
@@ -534,13 +511,6 @@ var Welsh;
 /// <reference path="./Helpers.ts"/>
 /// <reference path="./Common.ts"/>
 /// <reference path="./Scheduler.ts"/>
-/*
- * Welsh (Promises, but not really)
- * Licensed under the MIT License
- * see LICENSE.md
- *
- * @author Thomas S. Bradford (kode4food.it)
- */
 "use strict";
 var __extends = (this && this.__extends) || function (d, b) {
     for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p];
@@ -711,13 +681,6 @@ var Welsh;
 })(Welsh || (Welsh = {}));
 /// <reference path="./Helpers.ts"/>
 /// <reference path="./Common.ts"/>
-/*
- * Welsh (Promises, but not really)
- * Licensed under the MIT License
- * see LICENSE.md
- *
- * @author Thomas S. Bradford (kode4food.it)
- */
 "use strict";
 var Welsh;
 (function (Welsh) {
@@ -835,13 +798,6 @@ var Welsh;
 })(Welsh || (Welsh = {}));
 /// <reference path="./Promise.ts"/>
 /// <reference path="./Deferred.ts"/>
-/*
- * Welsh (Promises, but not really)
- * Licensed under the MIT License
- * see LICENSE.md
- *
- * @author Thomas S. Bradford (kode4food.it)
- */
 "use strict";
 /// <reference path="./typings/node/node.d.ts"/>
 /// <reference path="./lib/Welsh.ts"/>
