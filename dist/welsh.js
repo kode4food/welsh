@@ -36,11 +36,11 @@ var Welsh;
             };
         }());
         function getThenFunction(value) {
-            if (!value) {
-                return null;
-            }
             var valueType = typeof value;
             if (valueType !== 'object' && valueType !== 'function') {
+                return null;
+            }
+            if (value === null) {
                 return null;
             }
             var then = value.then;
@@ -61,6 +61,48 @@ var Welsh;
         }
         Helpers.tryCall = tryCall;
     })(Helpers = Welsh.Helpers || (Welsh.Helpers = {}));
+})(Welsh || (Welsh = {}));
+/// <reference path="./Helpers.ts"/>
+/// <reference path="./Common.ts"/>
+"use strict";
+var Welsh;
+(function (Welsh) {
+    var Property;
+    (function (Property) {
+        var getThenFunction = Welsh.Helpers.getThenFunction;
+        function resolvePath(instance, path) {
+            var Constructor = instance.constructor;
+            return new Constructor(function (resolve, reject) {
+                var target = instance;
+                var idx = 0;
+                resolveNext();
+                function resolveNext() {
+                    var then = getThenFunction(target);
+                    if (then) {
+                        then.call(target, fulfillTarget, reject);
+                        return;
+                    }
+                    if (idx >= path.length) {
+                        resolve(target);
+                        return;
+                    }
+                    target = target[path[idx++]];
+                    if (target === null || target === undefined) {
+                        var pathString = path.slice(0, idx).join('/');
+                        reject(new Error("Property path not found: " + pathString));
+                        return;
+                    }
+                    resolveNext();
+                }
+                function fulfillTarget(result) {
+                    target = result;
+                    resolveNext();
+                    return result;
+                }
+            });
+        }
+        Property.resolvePath = resolvePath;
+    })(Property = Welsh.Property || (Welsh.Property = {}));
 })(Welsh || (Welsh = {}));
 /// <reference path="./Helpers.ts"/>
 /// <reference path="./Common.ts"/>
@@ -267,6 +309,7 @@ var Welsh;
     Welsh.GlobalScheduler = new Scheduler();
 })(Welsh || (Welsh = {}));
 /// <reference path="./Helpers.ts"/>
+/// <reference path="./Property.ts"/>
 /// <reference path="./Collection.ts"/>
 /// <reference path="./Scheduler.ts"/>
 "use strict";
@@ -276,6 +319,7 @@ var Welsh;
     var getThenFunction = Welsh.Helpers.getThenFunction;
     var tryCall = Welsh.Helpers.tryCall;
     var TryError = Welsh.Helpers.TryError;
+    var resolvePath = Welsh.Property.resolvePath;
     var createRace = Welsh.Collection.createRace;
     var createAll = Welsh.Collection.createAll;
     var createSome = Welsh.Collection.createSome;
@@ -372,6 +416,9 @@ var Welsh;
         Common.prototype.toDeferred = function () {
             return convertUsing(this, Welsh.Deferred);
         };
+        Common.prototype.path = function (path) {
+            return resolvePath(this, path);
+        };
         Common.prototype.race = function () {
             return createRace(this);
         };
@@ -415,11 +462,14 @@ var Welsh;
                 });
             }
         };
-        Common.all = function (resultOrArray) {
-            return this.resolve(resultOrArray).all();
+        Common.path = function (resultOrArray, path) {
+            return this.resolve(resultOrArray).path(path);
         };
         Common.race = function (resultOrArray) {
             return this.resolve(resultOrArray).race();
+        };
+        Common.all = function (resultOrArray) {
+            return this.resolve(resultOrArray).all();
         };
         Common.some = function (resultOrArray, count) {
             return this.resolve(resultOrArray).some(count);

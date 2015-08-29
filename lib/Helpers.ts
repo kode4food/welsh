@@ -39,11 +39,11 @@ namespace Welsh.Helpers {
   }());
 
   export function getThenFunction(value?: any) {
-    if ( !value ) {
-      return null;
-    }
     var valueType = typeof value;
     if ( valueType !== 'object' && valueType !== 'function' ) {
+      return null;
+    }
+    if ( value === null ) {
       return null;
     }
     var then = value.then;

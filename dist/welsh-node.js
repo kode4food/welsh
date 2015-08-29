@@ -12,6 +12,7 @@ var Welsh;
     (function (Helpers) {
         var objectToString = Object.prototype.toString;
         Helpers.TryError = { reason: null };
+        // TypeScript would prefer the polyfill
         if (!Array.isArray) {
             Array.isArray = function (obj) {
                 return obj && objectToString.call(obj) === '[object Array]';
@@ -30,11 +31,11 @@ var Welsh;
             };
         }());
         function getThenFunction(value) {
-            if (!value) {
-                return null;
-            }
             var valueType = typeof value;
             if (valueType !== 'object' && valueType !== 'function') {
+                return null;
+            }
+            if (value === null) {
                 return null;
             }
             var then = value.then;
@@ -58,6 +59,62 @@ var Welsh;
 })(Welsh || (Welsh = {}));
 /// <reference path="./Helpers.ts"/>
 /// <reference path="./Common.ts"/>
+/*
+ * Welsh (Promises, but not really)
+ * Licensed under the MIT License
+ * see LICENSE.md
+ *
+ * @author Thomas S. Bradford (kode4food.it)
+ */
+"use strict";
+var Welsh;
+(function (Welsh) {
+    var Property;
+    (function (Property) {
+        var getThenFunction = Welsh.Helpers.getThenFunction;
+        function resolvePath(instance, path) {
+            var Constructor = instance.constructor;
+            return new Constructor(function (resolve, reject) {
+                var target = instance;
+                var idx = 0;
+                resolveNext();
+                function resolveNext() {
+                    var then = getThenFunction(target);
+                    if (then) {
+                        then.call(target, fulfillTarget, reject);
+                        return;
+                    }
+                    if (idx >= path.length) {
+                        resolve(target);
+                        return;
+                    }
+                    target = target[path[idx++]];
+                    if (target === null || target === undefined) {
+                        var pathString = path.slice(0, idx).join('/');
+                        reject(new Error("Property path not found: " + pathString));
+                        return;
+                    }
+                    resolveNext();
+                }
+                function fulfillTarget(result) {
+                    target = result;
+                    resolveNext();
+                    return result;
+                }
+            });
+        }
+        Property.resolvePath = resolvePath;
+    })(Property = Welsh.Property || (Welsh.Property = {}));
+})(Welsh || (Welsh = {}));
+/// <reference path="./Helpers.ts"/>
+/// <reference path="./Common.ts"/>
+/*
+ * Welsh (Promises, but not really)
+ * Licensed under the MIT License
+ * see LICENSE.md
+ *
+ * @author Thomas S. Bradford (kode4food.it)
+ */
 "use strict";
 var Welsh;
 (function (Welsh) {
@@ -261,8 +318,16 @@ var Welsh;
     Welsh.GlobalScheduler = new Scheduler();
 })(Welsh || (Welsh = {}));
 /// <reference path="./Helpers.ts"/>
+/// <reference path="./Property.ts"/>
 /// <reference path="./Collection.ts"/>
 /// <reference path="./Scheduler.ts"/>
+/*
+ * Welsh (Promises, but not really)
+ * Licensed under the MIT License
+ * see LICENSE.md
+ *
+ * @author Thomas S. Bradford (kode4food.it)
+ */
 "use strict";
 var Welsh;
 (function (Welsh) {
@@ -270,6 +335,7 @@ var Welsh;
     var getThenFunction = Welsh.Helpers.getThenFunction;
     var tryCall = Welsh.Helpers.tryCall;
     var TryError = Welsh.Helpers.TryError;
+    var resolvePath = Welsh.Property.resolvePath;
     var createRace = Welsh.Collection.createRace;
     var createAll = Welsh.Collection.createAll;
     var createSome = Welsh.Collection.createSome;
@@ -282,6 +348,7 @@ var Welsh;
     var State = Welsh.State;
     var Common = (function () {
         function Common(executor) {
+            // no-op
         }
         Common.prototype.isPending = function () {
             return !(this._state && this._state !== State.Resolving);
@@ -366,6 +433,9 @@ var Welsh;
         Common.prototype.toDeferred = function () {
             return convertUsing(this, Welsh.Deferred);
         };
+        Common.prototype.path = function (path) {
+            return resolvePath(this, path);
+        };
         Common.prototype.race = function () {
             return createRace(this);
         };
@@ -409,11 +479,14 @@ var Welsh;
                 });
             }
         };
-        Common.all = function (resultOrArray) {
-            return this.resolve(resultOrArray).all();
+        Common.path = function (resultOrArray, path) {
+            return this.resolve(resultOrArray).path(path);
         };
         Common.race = function (resultOrArray) {
             return this.resolve(resultOrArray).race();
+        };
+        Common.all = function (resultOrArray) {
+            return this.resolve(resultOrArray).all();
         };
         Common.some = function (resultOrArray, count) {
             return this.resolve(resultOrArray).some(count);
@@ -461,6 +534,13 @@ var Welsh;
 /// <reference path="./Helpers.ts"/>
 /// <reference path="./Common.ts"/>
 /// <reference path="./Scheduler.ts"/>
+/*
+ * Welsh (Promises, but not really)
+ * Licensed under the MIT License
+ * see LICENSE.md
+ *
+ * @author Thomas S. Bradford (kode4food.it)
+ */
 "use strict";
 var __extends = (this && this.__extends) || function (d, b) {
     for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p];
@@ -631,6 +711,13 @@ var Welsh;
 })(Welsh || (Welsh = {}));
 /// <reference path="./Helpers.ts"/>
 /// <reference path="./Common.ts"/>
+/*
+ * Welsh (Promises, but not really)
+ * Licensed under the MIT License
+ * see LICENSE.md
+ *
+ * @author Thomas S. Bradford (kode4food.it)
+ */
 "use strict";
 var Welsh;
 (function (Welsh) {
@@ -748,6 +835,13 @@ var Welsh;
 })(Welsh || (Welsh = {}));
 /// <reference path="./Promise.ts"/>
 /// <reference path="./Deferred.ts"/>
+/*
+ * Welsh (Promises, but not really)
+ * Licensed under the MIT License
+ * see LICENSE.md
+ *
+ * @author Thomas S. Bradford (kode4food.it)
+ */
 "use strict";
 /// <reference path="./typings/node/node.d.ts"/>
 /// <reference path="./lib/Welsh.ts"/>

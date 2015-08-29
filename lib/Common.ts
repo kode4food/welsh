@@ -1,4 +1,5 @@
 /// <reference path="./Helpers.ts"/>
+/// <reference path="./Property.ts"/>
 /// <reference path="./Collection.ts"/>
 /// <reference path="./Scheduler.ts"/>
 
@@ -18,6 +19,7 @@ namespace Welsh {
   import getThenFunction = Helpers.getThenFunction;
   import tryCall = Helpers.tryCall;
   import TryError = Helpers.TryError;
+  import resolvePath = Property.resolvePath;
   import createRace = Collection.createRace;
   import createAll = Collection.createAll;
   import createSome = Collection.createSome;
@@ -35,6 +37,7 @@ namespace Welsh {
   export type Finalizer = () => void;
   export type Executor = (resolve: Resolve, reject: Reject) => void;
   export type NodeCallback = (err: any, arg?: any) => void;
+  export type PathIndex = String | Number | symbol | any;
 
   export enum State {
     Fulfilled = 1,
@@ -160,6 +163,10 @@ namespace Welsh {
       return convertUsing(this, Welsh.Deferred);
     }
 
+    public path(path: PathIndex): Common {
+      return resolvePath(this, path);
+    }
+
     public race(): Common {
       return createRace(this);
     }
@@ -212,12 +219,16 @@ namespace Welsh {
       }
     }
 
-    static all(resultOrArray: ResultOrArray): Common {
-      return this.resolve(resultOrArray).all();
+    static path(resultOrArray: ResultOrArray, path: PathIndex[]): Common {
+      return this.resolve(resultOrArray).path(path);
     }
 
     static race(resultOrArray: ResultOrArray): Common {
       return this.resolve(resultOrArray).race();
+    }
+
+    static all(resultOrArray: ResultOrArray): Common {
+      return this.resolve(resultOrArray).all();
     }
 
     static some(resultOrArray: ResultOrArray, count: number): Common {
