@@ -18,11 +18,14 @@ var Welsh;
     (function (Helpers) {
         var objectToString = Object.prototype.toString;
         Helpers.TryError = { reason: null };
+        /* istanbul ignore next */
         if (!Array.isArray) {
+            // TypeScript would prefer the polyfill
             Array.isArray = function (obj) {
                 return obj && objectToString.call(obj) === '[object Array]';
             };
         }
+        /* istanbul ignore next */
         Helpers.bindThis = (function () {
             if (Function.prototype.bind) {
                 return function (func, thisVal) {
@@ -64,6 +67,13 @@ var Welsh;
 })(Welsh || (Welsh = {}));
 /// <reference path="./Helpers.ts"/>
 /// <reference path="./Common.ts"/>
+/*
+ * Welsh (Promises, but not really)
+ * Licensed under the MIT License
+ * see LICENSE.md
+ *
+ * @author Thomas S. Bradford (kode4food.it)
+ */
 "use strict";
 var Welsh;
 (function (Welsh) {
@@ -75,28 +85,26 @@ var Welsh;
             return new Constructor(function (resolve, reject) {
                 var target = instance;
                 var idx = 0;
-                resolveNext();
-                function resolveNext() {
-                    var then = getThenFunction(target);
-                    if (then) {
-                        then.call(target, fulfillTarget, reject);
-                        return;
+                continueResolving();
+                function continueResolving() {
+                    while (idx < path.length) {
+                        var then = getThenFunction(target);
+                        if (then) {
+                            then.call(target, fulfillTarget, reject);
+                            return;
+                        }
+                        target = target[path[idx++]];
+                        if (target === null || target === undefined) {
+                            var pathString = path.slice(0, idx).join('/');
+                            reject(new Error("Property path not found: " + pathString));
+                            return;
+                        }
                     }
-                    if (idx >= path.length) {
-                        resolve(target);
-                        return;
-                    }
-                    target = target[path[idx++]];
-                    if (target === null || target === undefined) {
-                        var pathString = path.slice(0, idx).join('/');
-                        reject(new Error("Property path not found: " + pathString));
-                        return;
-                    }
-                    resolveNext();
+                    resolve(target);
                 }
                 function fulfillTarget(result) {
                     target = result;
-                    resolveNext();
+                    continueResolving();
                     return result;
                 }
             });
@@ -106,6 +114,13 @@ var Welsh;
 })(Welsh || (Welsh = {}));
 /// <reference path="./Helpers.ts"/>
 /// <reference path="./Common.ts"/>
+/*
+ * Welsh (Promises, but not really)
+ * Licensed under the MIT License
+ * see LICENSE.md
+ *
+ * @author Thomas S. Bradford (kode4food.it)
+ */
 "use strict";
 var Welsh;
 (function (Welsh) {
@@ -187,12 +202,12 @@ var Welsh;
                     reject(new Error("Can't wait for " + count + " Results"));
                     return;
                 }
-                if (count > waitingFor) {
-                    reject(new Error(count + " Result(s) can never be fulfilled"));
-                    return;
-                }
                 if (count === 0) {
                     resolve([]);
+                    return;
+                }
+                if (waitingFor <= count) {
+                    reject(new Error(count + " Result(s) can never be fulfilled"));
                     return;
                 }
                 for (var i = 0, len = waitingFor; i < len; i++) {
@@ -213,6 +228,7 @@ var Welsh;
                     throw reason;
                 }
                 function provideResult(result) {
+                    /* istanbul ignore next: guard */
                     if (count === 0) {
                         return;
                     }
@@ -225,12 +241,20 @@ var Welsh;
                     decrementWaiting();
                 }
                 function decrementWaiting() {
+                    /* istanbul ignore next: guard */
                     if (waitingFor === 0) {
                         return;
                     }
-                    if (--waitingFor === 0 && count > 0) {
-                        reject(new Error(count + " Result(s) not fulfilled"));
+                    waitingFor -= 1;
+                    checkWaitingAgainstCount();
+                }
+                function checkWaitingAgainstCount() {
+                    if (waitingFor >= count) {
+                        return;
                     }
+                    reject(new Error(count + " Result(s) can never be fulfilled"));
+                    count = 0;
+                    waitingFor = 0;
                 }
             });
         }
@@ -247,7 +271,8 @@ var Welsh;
 "use strict";
 var Welsh;
 (function (Welsh) {
-    var nextTick = (function () {
+    /* istanbul ignore next */
+    Welsh.nextTick = (function () {
         if (typeof setImmediate === 'function') {
             return setImmediate;
         }
@@ -275,7 +300,7 @@ var Welsh;
             this._queueLength = queueLength + 2;
             if (!this._isFlushing) {
                 this._isFlushing = true;
-                nextTick(function () { _this.flushQueue(); });
+                Welsh.nextTick(function () { _this.flushQueue(); });
             }
         };
         Scheduler.prototype.collapseQueue = function () {
@@ -312,6 +337,13 @@ var Welsh;
 /// <reference path="./Property.ts"/>
 /// <reference path="./Collection.ts"/>
 /// <reference path="./Scheduler.ts"/>
+/*
+ * Welsh (Promises, but not really)
+ * Licensed under the MIT License
+ * see LICENSE.md
+ *
+ * @author Thomas S. Bradford (kode4food.it)
+ */
 "use strict";
 var Welsh;
 (function (Welsh) {
@@ -332,6 +364,7 @@ var Welsh;
     var State = Welsh.State;
     var Common = (function () {
         function Common(executor) {
+            // no-op
         }
         Common.prototype.isPending = function () {
             return !(this._state && this._state !== State.Resolving);
@@ -357,12 +390,15 @@ var Welsh;
             }
             throw new Error("Can't retrieve reason if not rejected");
         };
+        /* istanbul ignore next */
         Common.prototype.resolve = function (result) {
             throw new Error("Not implemented");
         };
+        /* istanbul ignore next */
         Common.prototype.reject = function (reason) {
             throw new Error("Not implemented");
         };
+        /* istanbul ignore next */
         Common.prototype.then = function (onFulfilled, onRejected) {
             throw new Error("Not implemented");
         };
@@ -375,7 +411,7 @@ var Welsh;
                 var tryResult = tryCall(onFulfilled, result);
                 if (tryResult === TryError) {
                     var err = tryResult.reason;
-                    Welsh.GlobalScheduler.queue(function () {
+                    Welsh.nextTick(function () {
                         throw err;
                     });
                 }
@@ -388,7 +424,7 @@ var Welsh;
                 var tryResult = tryCall(onRejected, reason);
                 if (tryResult === TryError) {
                     var err = tryResult.reason;
-                    Welsh.GlobalScheduler.queue(function () {
+                    Welsh.nextTick(function () {
                         throw err;
                     });
                 }
@@ -517,6 +553,13 @@ var Welsh;
 /// <reference path="./Helpers.ts"/>
 /// <reference path="./Common.ts"/>
 /// <reference path="./Scheduler.ts"/>
+/*
+ * Welsh (Promises, but not really)
+ * Licensed under the MIT License
+ * see LICENSE.md
+ *
+ * @author Thomas S. Bradford (kode4food.it)
+ */
 "use strict";
 var __extends = (this && this.__extends) || function (d, b) {
     for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p];
@@ -529,6 +572,7 @@ var Welsh;
     var getThenFunction = Welsh.Helpers.getThenFunction;
     var tryCall = Welsh.Helpers.tryCall;
     var TryError = Welsh.Helpers.TryError;
+    /* istanbul ignore next */
     function noOp() { }
     var Promise = (function (_super) {
         __extends(Promise, _super);
@@ -687,6 +731,13 @@ var Welsh;
 })(Welsh || (Welsh = {}));
 /// <reference path="./Helpers.ts"/>
 /// <reference path="./Common.ts"/>
+/*
+ * Welsh (Promises, but not really)
+ * Licensed under the MIT License
+ * see LICENSE.md
+ *
+ * @author Thomas S. Bradford (kode4food.it)
+ */
 "use strict";
 var Welsh;
 (function (Welsh) {
@@ -804,6 +855,13 @@ var Welsh;
 })(Welsh || (Welsh = {}));
 /// <reference path="./Promise.ts"/>
 /// <reference path="./Deferred.ts"/>
+/*
+ * Welsh (Promises, but not really)
+ * Licensed under the MIT License
+ * see LICENSE.md
+ *
+ * @author Thomas S. Bradford (kode4food.it)
+ */
 "use strict";
 /// <reference path="./typings/node/node.d.ts"/>
 /// <reference path="./lib/Welsh.ts"/>

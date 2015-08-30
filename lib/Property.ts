@@ -19,33 +19,29 @@ namespace Welsh.Property {
     return new Constructor(function (resolve, reject) {
       var target: any = instance;
       var idx = 0;
-      resolveNext();
+      continueResolving();
 
-      function resolveNext(): void {
-        var then = getThenFunction(target);
-        if ( then ) {
-          then.call(target, fulfillTarget, reject);
-          return;
+      function continueResolving(): void {
+        while ( idx < path.length ) {
+          var then = getThenFunction(target);
+          if ( then ) {
+            then.call(target, fulfillTarget, reject);
+            return;
+          }
+
+          target = target[path[idx++]];
+          if ( target === null || target === undefined ) {
+            var pathString = path.slice(0, idx).join('/');
+            reject(new Error("Property path not found: " + pathString));
+            return;
+          }
         }
-
-        if ( idx >= path.length ) {
-          resolve(target);
-          return;
-        }
-
-        target = target[path[idx++]];
-        if ( target === null || target === undefined ) {
-          var pathString = path.slice(0, idx).join('/');
-          reject(new Error("Property path not found: " + pathString));
-          return;
-        }
-
-        resolveNext();
+        resolve(target);
       }
 
       function fulfillTarget(result?: Result) {
         target = result;
-        resolveNext();
+        continueResolving();
         return result;
       }
     });

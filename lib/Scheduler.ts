@@ -9,7 +9,8 @@
 "use strict";
 
 namespace Welsh {
-  var nextTick = (function () {
+  /* istanbul ignore next */
+  export var nextTick = (function () {
     if ( typeof setImmediate === 'function' ) {
       return setImmediate;
     }

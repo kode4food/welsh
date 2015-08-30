@@ -5,6 +5,7 @@
 var expect = require('chai').expect;
 var welsh = require('../dist/welsh-node');
 
+/* istanbul ignore next */
 function noOp() {}
 
 describe("Welsh 'path()' Implementation", function () {

@@ -17,13 +17,15 @@ namespace Welsh.Helpers {
 
   export var TryError: ErrorInterface = { reason: null };
 
-  // TypeScript would prefer the polyfill
+  /* istanbul ignore next */
   if ( !Array.isArray ) {
+    // TypeScript would prefer the polyfill
     Array.isArray = function (obj: Object): boolean {
       return obj && objectToString.call(obj) === '[object Array]';
     };
   }
 
+  /* istanbul ignore next */
   export var bindThis = (function () {
     if ( Function.prototype.bind ) {
       return function (func: Function, thisVal: Object) {

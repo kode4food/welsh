@@ -2,7 +2,7 @@
   "compilerOptions": {
     "target": "es5",
     "module": "commonjs",
-    "removeComments": true,
+    "removeComments": false,
     "out": "dist/welsh-node.js",
     "sourceMap": false,
     "noImplicitAny": true

@@ -172,7 +172,7 @@ describe("Welsh Promises", function () {
     expect(p.isRejected()).to.be.false;
     expect(p.isPending()).to.be.false;
     expect(p.getResult()).to.equal('hello');
-    expect(function () { p.getReason(); }).to.throw.Error;
+    expect(function () { p.getReason(); }).to.throw("Can't retrieve reason if not rejected");
 
     p = welsh.Promise.reject('rejected!');
     expect(p.isSettled()).to.be.true;
@@ -180,15 +180,15 @@ describe("Welsh Promises", function () {
     expect(p.isRejected()).to.be.true;
     expect(p.isPending()).to.be.false;
     expect(p.getReason()).to.equal('rejected!');
-    expect(function () { p.getResult(); }).to.throw.Error;
+    expect(function () { p.getResult(); }).to.throw("Can't retrieve result if not fulfilled");
 
     p = new welsh.Promise(function () {});
     expect(p.isSettled()).to.be.false;
     expect(p.isFulfilled()).to.be.false;
     expect(p.isRejected()).to.be.false;
     expect(p.isPending()).to.be.true;
-    expect(function () { p.getResult(); }).to.throw.Error;
-    expect(function () { p.getReason(); }).to.throw.Error;
+    expect(function () { p.getResult(); }).to.throw("Can't retrieve result if not fulfilled");
+    expect(function () { p.getReason(); }).to.throw("Can't retrieve reason if not rejected");
 
     done();
   });

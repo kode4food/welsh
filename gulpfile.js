@@ -5,6 +5,8 @@ var path = require('path');
 var gulp = require('gulp');
 var typescript = require('gulp-typescript');
 var mocha = require('gulp-mocha');
+var istanbul = require('gulp-istanbul');
+var enforcer = require('gulp-istanbul-enforcer');
 
 var source = require('vinyl-source-stream');
 var inject = require('gulp-inject-string');
@@ -20,6 +22,8 @@ var testFiles = [testDir + '/*.js'];
 var browserSourceFile = "./browserify.js";
 var browserTargetDir = "./dist/";
 var browserTargetFile = "welsh.js";
+var browserTestFile = path.resolve(browserTargetDir, "welsh-node.js");
+var coverageFiles = testFiles.concat([browserTestFile]);
 
 var preamble = [
   "/*!", pkg.name, "v"+pkg.version, "|",
@@ -39,8 +43,38 @@ var minifyConfig = {
   legacy: false
 };
 
+var enforcerConfig = {
+  thresholds: {
+    statements: 100,
+    branches: 96.09,  // thank TypeScript
+    lines: 100,
+    functions: 100
+  },
+  coverageDirectory: 'coverage',
+  rootDirectory: ''
+};
+
+function createUnitTests() {
+  return gulp.src(testFiles).pipe(mocha(mochaConfig));
+}
+
 gulp.task('test', ['compile'], function (done) {
   gulp.src(testFiles).pipe(mocha(mochaConfig)).on('end', done);
+});
+
+gulp.task('coverage', function (done) {
+  gulp.src(coverageFiles)
+      .pipe(istanbul())
+      .pipe(istanbul.hookRequire())
+      .on('finish', function () {
+        createUnitTests().pipe(istanbul.writeReports()).on('end', done);
+      });
+});
+
+gulp.task('enforce', ['coverage'], function (done) {
+  gulp.src('.')
+      .pipe(enforcer(enforcerConfig))
+      .on('end', done);
 });
 
 gulp.task('compile', function() {
@@ -69,5 +103,5 @@ gulp.task('watch', ['compile'], function () {
   gulp.watch(tsFiles, ['compile']);
 });
 
-gulp.task('build', ['minify']);
+gulp.task('build', ['enforce', 'minify']);
 gulp.task('default', ['build']);

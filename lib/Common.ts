@@ -91,14 +91,17 @@ namespace Welsh {
       throw new Error("Can't retrieve reason if not rejected");
     }
 
+    /* istanbul ignore next */
     public resolve(result?: Result): void {
       throw new Error("Not implemented");
     }
 
+    /* istanbul ignore next */
     public reject(reason?: Reason): void {
       throw new Error("Not implemented");
     }
 
+    /* istanbul ignore next */
     public then(onFulfilled?: Fulfilled, onRejected?: Rejected): Common {
       throw new Error("Not implemented");
     }
@@ -113,7 +116,7 @@ namespace Welsh {
         var tryResult = tryCall(onFulfilled, result);
         if ( tryResult === TryError ) {
           var err = tryResult.reason;
-          GlobalScheduler.queue(() => {
+          nextTick(() => {
             throw err;
           });
         }
@@ -127,7 +130,7 @@ namespace Welsh {
         var tryResult = tryCall(onRejected, reason);
         if ( tryResult === TryError ) {
           var err = tryResult.reason;
-          GlobalScheduler.queue(() => {
+          nextTick(() => {
             throw err;
           });
         }

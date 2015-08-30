@@ -11,7 +11,7 @@ describe("Welsh 'some()' Implementation", function () {
   it("should support args with promises and deferreds", function (done) {
     var p1 = new welsh.Promise(noOp);
     var p2 = new welsh.Promise(noOp);
-    var d1 = new welsh.Deferred(noOp);
+    var d1 = welsh.Deferred.reject("d1 immediately rejected");
     var d2 = new welsh.Deferred(noOp);
 
     d2.then(function (result) {
@@ -78,5 +78,27 @@ describe("Welsh 'some()' Implementation", function () {
       expect(reason.message).to.equal("Result containing a Collection is required");
       done();
     });
+  });
+
+  it("should deal properly with rejection", function (done) {
+    var p1 = new welsh.Promise(noOp);
+    var p2 = new welsh.Promise(noOp);
+    var d1 = new welsh.Deferred(noOp);
+    var d2 = welsh.Deferred.reject('d2 rejected');
+
+    var some = welsh.Promise.some(['hello', p1, p2, d1, d2, 37], 5);
+    some.catch(function (reason) {
+      expect(reason).to.be.an('Error');
+      expect(reason.message).to.equal("3 Result(s) can never be fulfilled");
+      done();
+    });
+
+    /* istanbul ignore next */
+    function rejectP1() { p1.reject('p1 rejected'); }
+    /* istanbul ignore next */
+    function rejectP2() { p2.reject('p2 rejected'); }
+
+    setTimeout(rejectP1, Math.random() * 99);
+    setTimeout(rejectP2, Math.random() * 99);
   });
 });

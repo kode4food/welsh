@@ -20,6 +20,7 @@ namespace Welsh {
   type PendingHandler = [Promise, Resolve, Reject];
   type PendingHandlers = PendingHandler | PendingHandler[];
 
+  /* istanbul ignore next */
   function noOp() {}
 
   export class Promise extends Common {

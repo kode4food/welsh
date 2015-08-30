@@ -181,7 +181,7 @@ describe("Welsh Deferreds", function () {
     expect(d.isRejected()).to.be.false;
     expect(d.isPending()).to.be.false;
     expect(d.getResult()).to.equal('hello');
-    expect(function () { d.getReason(); }).to.throw.Error;
+    expect(function () { d.getReason(); }).to.throw("Can't retrieve reason if not rejected");
 
     d = welsh.Deferred.reject('rejected!');
     expect(d.isSettled()).to.be.true;
@@ -189,15 +189,15 @@ describe("Welsh Deferreds", function () {
     expect(d.isRejected()).to.be.true;
     expect(d.isPending()).to.be.false;
     expect(d.getReason()).to.equal('rejected!');
-    expect(function () { d.getResult(); }).to.throw.Error;
+    expect(function () { d.getResult(); }).to.throw("Can't retrieve result if not fulfilled");
 
     d = new welsh.Deferred(function () {});
     expect(d.isSettled()).to.be.false;
     expect(d.isFulfilled()).to.be.false;
     expect(d.isRejected()).to.be.false;
     expect(d.isPending()).to.be.true;
-    expect(function () { d.getResult(); }).to.throw.Error;
-    expect(function () { d.getReason(); }).to.throw.Error;
+    expect(function () { d.getResult(); }).to.throw("Can't retrieve result if not fulfilled");
+    expect(function () { d.getReason(); }).to.throw("Can't retrieve reason if not rejected");
 
     done();
   });

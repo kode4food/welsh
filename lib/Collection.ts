@@ -98,13 +98,13 @@ namespace Welsh.Collection {
         return;
       }
 
-      if ( count > waitingFor ) {
-        reject(new Error(`${count} Result(s) can never be fulfilled`));
+      if ( count === 0 ) {
+        resolve([]);
         return;
       }
 
-      if ( count === 0 ) {
-        resolve([]);
+      if ( waitingFor <= count ) {
+        reject(new Error(`${count} Result(s) can never be fulfilled`));
         return;
       }
 
@@ -129,6 +129,7 @@ namespace Welsh.Collection {
       }
 
       function provideResult(result: Result) {
+        /* istanbul ignore next: guard */
         if ( count === 0 ) {
           return;
         }
@@ -142,12 +143,21 @@ namespace Welsh.Collection {
       }
 
       function decrementWaiting() {
+        /* istanbul ignore next: guard */
         if ( waitingFor === 0 ) {
           return;
         }
-        if ( --waitingFor === 0 && count > 0 ) {
-          reject(new Error(`${count} Result(s) not fulfilled`));
+        waitingFor -= 1;
+        checkWaitingAgainstCount();
+      }
+
+      function checkWaitingAgainstCount() {
+        if ( waitingFor >= count ) {
+          return;
         }
+        reject(new Error(`${count} Result(s) can never be fulfilled`));
+        count = 0;
+        waitingFor = 0;
       }
     });
   }

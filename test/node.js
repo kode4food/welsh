@@ -23,6 +23,7 @@ describe("Welsh 'toNode()' Implementation", function () {
     function resolvedCallback(err, result) {
       expect(err).to.be.null;
       expect(result).to.equal('i say hello!');
+      /* istanbul ignore next */
       if ( !--waiting ) {
         done();
       }
@@ -31,6 +32,7 @@ describe("Welsh 'toNode()' Implementation", function () {
     function rejectedCallback(err, result) {
       expect(result).to.be.undefined;
       expect(err).to.equal('i say i broke!');
+      /* istanbul ignore next */
       if ( !--waiting ) {
         done();
       }
