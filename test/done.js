@@ -4,7 +4,7 @@
 
 var domain = require('domain');
 var expect = require('chai').expect;
-var welsh = require('../dist/welsh-node');
+var welsh = require('../dist');
 
 function noOp() {}
 

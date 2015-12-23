@@ -3,7 +3,7 @@
 "use strict";
 
 var expect = require('chai').expect;
-var welsh = require('../dist/welsh-node');
+var welsh = require('../dist');
 
 describe("Lazy Executors", function () {
   it("should probably work with 'then'", function (done) {

@@ -3,7 +3,7 @@
 "use strict";
 
 var expect = require('chai').expect;
-var welsh = require('../dist/welsh-node');
+var welsh = require('../dist');
 
 describe("Welsh Promises", function () {
   it("should work", function (done) {

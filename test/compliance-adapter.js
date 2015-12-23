@@ -1,6 +1,6 @@
 "use strict";
 
-var welsh = require('../dist/welsh-node');
+var welsh = require('../dist');
 
 module.exports = {
   deferred: function () {

@@ -1,6 +1,3 @@
-/// <reference path="./Promise.ts"/>
-/// <reference path="./Deferred.ts"/>
-
 /*
  * Welsh (Promises, but not really)
  * Licensed under the MIT License
@@ -11,5 +8,5 @@
 
 "use strict";
 
-namespace Welsh {
-}
+export { default as Promise } from './Promise';
+export { default as Deferred } from './Deferred';

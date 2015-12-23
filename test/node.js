@@ -4,7 +4,7 @@
 
 var fs = require('fs');
 var expect = require('chai').expect;
-var welsh = require('../dist/welsh-node');
+var welsh = require('../dist');
 
 describe("Welsh 'toNode()' Implementation", function () {
   it("should probably work", function (done) {

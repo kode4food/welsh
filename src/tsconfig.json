@@ -3,11 +3,8 @@
     "target": "es5",
     "module": "commonjs",
     "removeComments": false,
-    "out": "dist/welsh-node.js",
+    "outDir": "../dist",
     "sourceMap": false,
     "noImplicitAny": true
-  },
-  "files": [
-    "index.ts"
-  ]
+  }
 }

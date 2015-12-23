@@ -17,20 +17,19 @@ var browserify = require('browserify');
 var pkg = require('./package.json');
 
 var testDir = './test';
-var tsFiles = ['index.ts', 'lib/**/*.ts'];
+var tsFiles = ['index.ts', 'src/**/*.ts'];
 var testFiles = [testDir + '/*.js'];
 var browserSourceFile = "./browserify.js";
 var browserTargetDir = "./dist/";
 var browserTargetFile = "welsh.js";
-var browserTestFile = path.resolve(browserTargetDir, "welsh-node.js");
-var coverageFiles = testFiles.concat([browserTestFile]);
+var coverageFiles = testFiles.concat(['dist/**/*.js', '!dist/welsh*.js']);
 
 var preamble = [
   "/*!", pkg.name, "v"+pkg.version, "|",
   "(c)", new Date().getFullYear(), pkg.author, "*/\n"
 ].join(' ');
 
-var tsProject = typescript.createProject('tsconfig.json');
+var tsProject = typescript.createProject('./src/tsconfig.json');
 
 var mochaConfig = {
 };
@@ -46,7 +45,7 @@ var minifyConfig = {
 var enforcerConfig = {
   thresholds: {
     statements: 100,
-    branches: 96.09,  // thank TypeScript
+    branches: 97.62, // Typescript!
     lines: 100,
     functions: 100
   },
@@ -62,7 +61,7 @@ gulp.task('test', ['compile'], function (done) {
   gulp.src(testFiles).pipe(mocha(mochaConfig)).on('end', done);
 });
 
-gulp.task('coverage', function (done) {
+gulp.task('coverage', ['compile'], function (done) {
   gulp.src(coverageFiles)
       .pipe(istanbul())
       .pipe(istanbul.hookRequire())
@@ -79,10 +78,10 @@ gulp.task('enforce', ['coverage'], function (done) {
 
 gulp.task('compile', function() {
   var tsResult = tsProject.src().pipe(typescript(tsProject));
-  return tsResult.js.pipe(gulp.dest('.'));
+  return tsResult.js.pipe(gulp.dest('./dist'));
 });
 
-gulp.task('browserify', ['compile'], function (done) {
+gulp.task('browserify', ['enforce'], function (done) {
   browserify(browserSourceFile, browserifyConfig)
     .bundle()
     .pipe(source(browserTargetFile))
@@ -103,5 +102,5 @@ gulp.task('watch', ['compile'], function () {
   gulp.watch(tsFiles, ['compile']);
 });
 
-gulp.task('build', ['enforce', 'minify']);
+gulp.task('build', ['minify']);
 gulp.task('default', ['build']);

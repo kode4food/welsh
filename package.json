@@ -2,7 +2,7 @@
   "name": "welsh",
   "version": "3.4.0",
   "description": " A+ Promises and Deferreds à la Twisted",
-  "main": "dist/welsh-node.js",
+  "main": "dist/index.js",
   "scripts": {
     "test": "gulp test",
     "compliance": "promises-aplus-tests test/compliance-adapter"

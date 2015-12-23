@@ -27,10 +27,16 @@
     "index.ts",
     "package.json",
     "typings",
-    "lib",
+    "src",
     "tsd.json",
-    "tsconfig.json",
-    "dist/welsh-node.js"
+    "dist/Collection.js",
+    "dist/Common.js",
+    "dist/Deferred.js",
+    "dist/Helpers.js",
+    "dist/Promise.js",
+    "dist/Property.js",
+    "dist/Scheduler.js",
+    "dist/index.js"
   ],
   "dependencies": { },
   "devDependencies": { }
