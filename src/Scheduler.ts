@@ -15,7 +15,12 @@ export const nextTick = (function () {
   }
   if ( typeof window === 'object' &&
     typeof window.requestAnimationFrame === 'function' ) {
-    return window.requestAnimationFrame;
+    if ( typeof window.requestAnimationFrame.bind === 'function' ) {
+      return window.requestAnimationFrame.bind(window);
+    }
+    return function () {
+      window.requestAnimationFrame.apply(window, arguments);
+    };
   }
   if ( typeof setTimeout === 'function' ) {
     return setTimeout;
