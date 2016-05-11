@@ -65,9 +65,9 @@ var Common = (function () {
             }
             var tryResult = Helpers_1.tryCall(onFulfilled, result);
             if (tryResult === Helpers_1.TryError) {
-                var err = tryResult.reason;
+                var err_1 = tryResult.reason;
                 Scheduler_1.nextTick(function () {
-                    throw err;
+                    throw err_1;
                 });
             }
             return result;
@@ -78,9 +78,9 @@ var Common = (function () {
             }
             var tryResult = Helpers_1.tryCall(onRejected, reason);
             if (tryResult === Helpers_1.TryError) {
-                var err = tryResult.reason;
+                var err_2 = tryResult.reason;
                 Scheduler_1.nextTick(function () {
-                    throw err;
+                    throw err_2;
                 });
             }
             throw reason;
@@ -190,7 +190,7 @@ var Common = (function () {
         return deferred;
     };
     return Common;
-})();
+}());
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.default = Common;
 function convertUsing(deferred, constructor) {

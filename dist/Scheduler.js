@@ -71,6 +71,6 @@ var Scheduler = (function () {
         this._isFlushing = false;
     };
     return Scheduler;
-})();
+}());
 exports.Scheduler = Scheduler;
 exports.GlobalScheduler = new Scheduler();

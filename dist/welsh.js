@@ -214,9 +214,9 @@ var Common = (function () {
             }
             var tryResult = Helpers_1.tryCall(onFulfilled, result);
             if (tryResult === Helpers_1.TryError) {
-                var err = tryResult.reason;
+                var err_1 = tryResult.reason;
                 Scheduler_1.nextTick(function () {
-                    throw err;
+                    throw err_1;
                 });
             }
             return result;
@@ -227,9 +227,9 @@ var Common = (function () {
             }
             var tryResult = Helpers_1.tryCall(onRejected, reason);
             if (tryResult === Helpers_1.TryError) {
-                var err = tryResult.reason;
+                var err_2 = tryResult.reason;
                 Scheduler_1.nextTick(function () {
-                    throw err;
+                    throw err_2;
                 });
             }
             throw reason;
@@ -339,7 +339,7 @@ var Common = (function () {
         return deferred;
     };
     return Common;
-})();
+}());
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.default = Common;
 function convertUsing(deferred, constructor) {
@@ -381,7 +381,7 @@ var PendingHandler = (function () {
         this.onRejected = onRejected;
     }
     return PendingHandler;
-})();
+}());
 var Deferred = (function (_super) {
     __extends(Deferred, _super);
     function Deferred(executor) {
@@ -481,7 +481,7 @@ var Deferred = (function (_super) {
         Scheduler_1.GlobalScheduler.queue(this.proceed, this);
     };
     return Deferred;
-})(Common_1.default);
+}(Common_1.default));
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.default = Deferred;
 
@@ -713,7 +713,7 @@ var Promise = (function (_super) {
         this._pendingLength = 0;
     };
     return Promise;
-})(Common_1.default);
+}(Common_1.default));
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.default = Promise;
 
@@ -832,7 +832,7 @@ var Scheduler = (function () {
         this._isFlushing = false;
     };
     return Scheduler;
-})();
+}());
 exports.Scheduler = Scheduler;
 exports.GlobalScheduler = new Scheduler();
 

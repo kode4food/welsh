@@ -168,6 +168,6 @@ var Promise = (function (_super) {
         this._pendingLength = 0;
     };
     return Promise;
-})(Common_1.default);
+}(Common_1.default));
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.default = Promise;

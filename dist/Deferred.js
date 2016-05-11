@@ -21,7 +21,7 @@ var PendingHandler = (function () {
         this.onRejected = onRejected;
     }
     return PendingHandler;
-})();
+}());
 var Deferred = (function (_super) {
     __extends(Deferred, _super);
     function Deferred(executor) {
@@ -121,6 +121,6 @@ var Deferred = (function (_super) {
         Scheduler_1.GlobalScheduler.queue(this.proceed, this);
     };
     return Deferred;
-})(Common_1.default);
+}(Common_1.default));
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.default = Deferred;
