@@ -26,7 +26,7 @@ function process(instance: Common, processor: Processor): Common {
       }
       processor(result.slice(), resolve, reject);
     }, reject);
-  })
+  });
 }
 
 export function createRace(instance: Common): Common {
@@ -91,7 +91,7 @@ export function createAny(instance: Common): Common {
 
 export function createSome(instance: Common, count?: number): Common {
   return process(instance, function (array, resolve, reject) {
-    let results:Result[] = [];
+    let results: Result[] = [];
     let waitingFor = array.length;
     if ( typeof count !== 'number' || count < 0 ) {
       reject(new Error(`Can't wait for ${count} Results`));

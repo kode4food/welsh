@@ -42,7 +42,7 @@ export class Scheduler {
     this._queueLength = queueLength + 2;
     if ( !this._isFlushing ) {
       this._isFlushing = true;
-      nextTick(() => { this.flushQueue() });
+      nextTick(() => this.flushQueue());
     }
   }
 

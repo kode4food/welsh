@@ -40,7 +40,7 @@ var Scheduler = (function () {
         this._queueLength = queueLength + 2;
         if (!this._isFlushing) {
             this._isFlushing = true;
-            exports.nextTick(function () { _this.flushQueue(); });
+            exports.nextTick(function () { return _this.flushQueue(); });
         }
     };
     Scheduler.prototype.collapseQueue = function () {

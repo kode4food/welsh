@@ -1,6 +1,6 @@
 {
   "name": "welsh",
-  "version": "4.0.0",
+  "version": "4.0.1",
   "description": " A+ Promises and Deferreds à la Twisted",
   "main": "dist/index.js",
   "scripts": {
@@ -29,13 +29,15 @@
     "gulp": "^3.9.1",
     "gulp-esmangle": "^1.1.1",
     "gulp-inject-string": "^1.1.0",
-    "gulp-istanbul": "^0.10.4",
+    "gulp-istanbul": "^1.0.0",
     "gulp-istanbul-enforcer": "^1.0.3",
     "gulp-mocha": "^2.2.0",
     "gulp-rename": "^1.2.2",
-    "gulp-typescript": "^2.13.4",
-    "mocha": "^2.4.5",
-    "promises-aplus-tests": "^2.1.1",
+    "gulp-tslint": "^5.0.0",
+    "gulp-typescript": "^2.13.6",
+    "mocha": "^2.5.3",
+    "promises-aplus-tests": "^2.1.2",
+    "tslint": "^3.13.0",
     "vinyl-source-stream": "^1.1.0"
   },
   "dependencies": {}

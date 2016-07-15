@@ -47,6 +47,85 @@ export default class Common implements Thenable {
   protected _state: State;
   protected _result: ResultOrReason;
 
+  public static resolve(result?: Result): Common {
+    if ( result instanceof this ) {
+      return result;
+    }
+    return new this(function (resolve) {
+      resolve(result);
+    });
+  }
+
+  public static reject(reason?: Reason): Common {
+    return new this(function (resolve, reject) {
+      reject(reason);
+    });
+  }
+
+  public static fromNode(nodeFunction: Function): Function {
+    let constructor = this;
+    return nodeWrapper;
+
+    function nodeWrapper() {
+      let wrapperArguments = arguments;
+      return new constructor(function (resolve, reject) {
+        let args = slice.call(wrapperArguments).concat(callback);
+        nodeFunction.apply(null, args);
+
+        function callback(err: any) {
+          if ( err ) {
+            reject(err);
+            return;
+          }
+          resolve(slice.call(arguments, 1));
+        }
+      });
+    }
+  }
+
+  public static path(resultOrArray: ResultOrArray, path: PathIndex[]): Common {
+    return this.resolve(resultOrArray).path(path);
+  }
+
+  public static race(resultOrArray: ResultOrArray): Common {
+    return this.resolve(resultOrArray).race();
+  }
+
+  public static all(resultOrArray: ResultOrArray): Common {
+    return this.resolve(resultOrArray).all();
+  }
+
+  public static some(resultOrArray: ResultOrArray, count: number): Common {
+    return this.resolve(resultOrArray).some(count);
+  }
+
+  public static any(resultOrArray: ResultOrArray): Common {
+    return this.resolve(resultOrArray).any();
+  }
+
+  public static lazy(executor: Executor): Common {
+    let resolve: Resolve;
+    let reject: Reject;
+    let called: boolean;
+
+    let deferred = new this(function (_resolve, _reject) {
+      resolve = _resolve;
+      reject = _reject;
+    });
+
+    let originalThen = getThenFunction(deferred);
+    deferred.then = function (onFulfilled, onRejected) {
+      if ( !called ) {
+        deferred.then = originalThen;
+        called = true;
+        executor(resolve, reject);
+      }
+      return originalThen(onFulfilled, onRejected);
+    };
+
+    return deferred;
+  }
+
   constructor(executor: Executor) {
     // no-op
   }
@@ -176,85 +255,6 @@ export default class Common implements Thenable {
 
   public any(): Common {
     return createAny(this);
-  }
-
-  static resolve(result?: Result): Common {
-    if ( result instanceof this ) {
-      return result;
-    }
-    return new this(function (resolve) {
-      resolve(result);
-    });
-  }
-
-  static reject(reason?: Reason): Common {
-    return new this(function (resolve, reject) {
-      reject(reason);
-    });
-  }
-
-  static fromNode(nodeFunction: Function): Function {
-    let constructor = this;
-    return nodeWrapper;
-
-    function nodeWrapper() {
-      let wrapperArguments = arguments;
-      return new constructor(function (resolve, reject) {
-        let args = slice.call(wrapperArguments).concat(callback);
-        nodeFunction.apply(null, args);
-
-        function callback(err: any) {
-          if ( err ) {
-            reject(err);
-            return;
-          }
-          resolve(slice.call(arguments, 1));
-        }
-      });
-    }
-  }
-
-  static path(resultOrArray: ResultOrArray, path: PathIndex[]): Common {
-    return this.resolve(resultOrArray).path(path);
-  }
-
-  static race(resultOrArray: ResultOrArray): Common {
-    return this.resolve(resultOrArray).race();
-  }
-
-  static all(resultOrArray: ResultOrArray): Common {
-    return this.resolve(resultOrArray).all();
-  }
-
-  static some(resultOrArray: ResultOrArray, count: number): Common {
-    return this.resolve(resultOrArray).some(count);
-  }
-
-  static any(resultOrArray: ResultOrArray): Common {
-    return this.resolve(resultOrArray).any();
-  }
-
-  static lazy(executor: Executor): Common {
-    let resolve: Resolve;
-    let reject: Reject;
-    let called: boolean;
-
-    let deferred = new this(function (_resolve, _reject) {
-      resolve = _resolve;
-      reject = _reject;
-    });
-
-    let originalThen = getThenFunction(deferred);
-    deferred.then = function (onFulfilled, onRejected) {
-      if ( !called ) {
-        deferred.then = originalThen;
-        called = true;
-        executor(resolve, reject);
-      }
-      return originalThen(onFulfilled, onRejected);
-    };
-
-    return deferred;
   }
 }
 

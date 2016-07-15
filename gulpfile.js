@@ -4,6 +4,7 @@ var path = require('path');
 
 var gulp = require('gulp');
 var typescript = require('gulp-typescript');
+var tslint = require('gulp-tslint');
 var mocha = require('gulp-mocha');
 var istanbul = require('gulp-istanbul');
 var enforcer = require('gulp-istanbul-enforcer');
@@ -45,7 +46,7 @@ var minifyConfig = {
 var enforcerConfig = {
   thresholds: {
     statements: 100,
-    branches: 97.62, // Typescript!
+    branches: 97.65, // Typescript!
     lines: 100,
     functions: 100
   },
@@ -61,6 +62,14 @@ gulp.task('test', ['compile'], function (done) {
   gulp.src(testFiles).pipe(mocha(mochaConfig)).on('end', done);
 });
 
+gulp.task('lint', function() {
+  return gulp.src(tsFiles)
+             .pipe(tslint())
+             .pipe(tslint.report('verbose', {
+               summarizeFailureOutput: true
+             }));
+});
+
 gulp.task('coverage', ['compile'], function (done) {
   gulp.src(coverageFiles)
       .pipe(istanbul())
@@ -70,7 +79,7 @@ gulp.task('coverage', ['compile'], function (done) {
       });
 });
 
-gulp.task('enforce', ['coverage'], function (done) {
+gulp.task('enforce', ['lint', 'coverage'], function (done) {
   gulp.src('.')
       .pipe(enforcer(enforcerConfig))
       .on('end', done);

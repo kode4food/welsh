@@ -21,6 +21,71 @@ var Common = (function () {
     function Common(executor) {
         // no-op
     }
+    Common.resolve = function (result) {
+        if (result instanceof this) {
+            return result;
+        }
+        return new this(function (resolve) {
+            resolve(result);
+        });
+    };
+    Common.reject = function (reason) {
+        return new this(function (resolve, reject) {
+            reject(reason);
+        });
+    };
+    Common.fromNode = function (nodeFunction) {
+        var constructor = this;
+        return nodeWrapper;
+        function nodeWrapper() {
+            var wrapperArguments = arguments;
+            return new constructor(function (resolve, reject) {
+                var args = slice.call(wrapperArguments).concat(callback);
+                nodeFunction.apply(null, args);
+                function callback(err) {
+                    if (err) {
+                        reject(err);
+                        return;
+                    }
+                    resolve(slice.call(arguments, 1));
+                }
+            });
+        }
+    };
+    Common.path = function (resultOrArray, path) {
+        return this.resolve(resultOrArray).path(path);
+    };
+    Common.race = function (resultOrArray) {
+        return this.resolve(resultOrArray).race();
+    };
+    Common.all = function (resultOrArray) {
+        return this.resolve(resultOrArray).all();
+    };
+    Common.some = function (resultOrArray, count) {
+        return this.resolve(resultOrArray).some(count);
+    };
+    Common.any = function (resultOrArray) {
+        return this.resolve(resultOrArray).any();
+    };
+    Common.lazy = function (executor) {
+        var resolve;
+        var reject;
+        var called;
+        var deferred = new this(function (_resolve, _reject) {
+            resolve = _resolve;
+            reject = _reject;
+        });
+        var originalThen = Helpers_1.getThenFunction(deferred);
+        deferred.then = function (onFulfilled, onRejected) {
+            if (!called) {
+                deferred.then = originalThen;
+                called = true;
+                executor(resolve, reject);
+            }
+            return originalThen(onFulfilled, onRejected);
+        };
+        return deferred;
+    };
     Common.prototype.isPending = function () {
         return !(this._state && this._state !== State.Resolving);
     };
@@ -123,71 +188,6 @@ var Common = (function () {
     };
     Common.prototype.any = function () {
         return Collection_1.createAny(this);
-    };
-    Common.resolve = function (result) {
-        if (result instanceof this) {
-            return result;
-        }
-        return new this(function (resolve) {
-            resolve(result);
-        });
-    };
-    Common.reject = function (reason) {
-        return new this(function (resolve, reject) {
-            reject(reason);
-        });
-    };
-    Common.fromNode = function (nodeFunction) {
-        var constructor = this;
-        return nodeWrapper;
-        function nodeWrapper() {
-            var wrapperArguments = arguments;
-            return new constructor(function (resolve, reject) {
-                var args = slice.call(wrapperArguments).concat(callback);
-                nodeFunction.apply(null, args);
-                function callback(err) {
-                    if (err) {
-                        reject(err);
-                        return;
-                    }
-                    resolve(slice.call(arguments, 1));
-                }
-            });
-        }
-    };
-    Common.path = function (resultOrArray, path) {
-        return this.resolve(resultOrArray).path(path);
-    };
-    Common.race = function (resultOrArray) {
-        return this.resolve(resultOrArray).race();
-    };
-    Common.all = function (resultOrArray) {
-        return this.resolve(resultOrArray).all();
-    };
-    Common.some = function (resultOrArray, count) {
-        return this.resolve(resultOrArray).some(count);
-    };
-    Common.any = function (resultOrArray) {
-        return this.resolve(resultOrArray).any();
-    };
-    Common.lazy = function (executor) {
-        var resolve;
-        var reject;
-        var called;
-        var deferred = new this(function (_resolve, _reject) {
-            resolve = _resolve;
-            reject = _reject;
-        });
-        var originalThen = Helpers_1.getThenFunction(deferred);
-        deferred.then = function (onFulfilled, onRejected) {
-            if (!called) {
-                deferred.then = originalThen;
-                called = true;
-                executor(resolve, reject);
-            }
-            return originalThen(onFulfilled, onRejected);
-        };
-        return deferred;
     };
     return Common;
 }());

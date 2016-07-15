@@ -9,20 +9,20 @@
 "use strict";
 
 import {
-  default as Common, State, Executor, Resolve, Reject, Result, Reason,
-  Fulfilled, Rejected
+  default as Common, State, Executor, Result, Reason, Fulfilled, Rejected
 } from './Common';
 
 import { getThenFunction, tryCall, TryError } from './Helpers';
 import { GlobalScheduler } from "./Scheduler";
 
-type PendingHandler = [Promise, Resolve, Reject];
+type PendingHandler = [Promise, Fulfilled, Rejected];
 type PendingHandlers = PendingHandler | PendingHandler[];
 
 /* istanbul ignore next */
-function noOp() {}
+function noOp() { "noOp"; }
 
 export default class Promise extends Common {
+  private _pendingHandler: PendingHandler;
   private _pendingHandlers: PendingHandlers;
   private _pendingLength: number = 0;
 
@@ -71,62 +71,31 @@ export default class Promise extends Common {
     GlobalScheduler.queue(this.notifyPending, this);
   }
 
-  private doResolve(executor: Executor): void {
-    let self = this;
-    let done: boolean;
-
-    let tryResult = tryCall(executor, onFulfilled, onRejected);
-    if ( tryResult === TryError ) {
-      if ( done ) {
-        return;
-      }
-      this.reject(tryResult.reason);
-    }
-
-    function onFulfilled(result?: Result): void {
-      if ( done ) {
-        return;
-      }
-      done = true;
-      self.resolve(result);
-    }
-
-    function onRejected(reason?: Reason): void {
-      if ( done ) {
-        return;
-      }
-      done = true;
-      self.reject(reason);
-    }
-  }
-
   public then(onFulfilled?: Fulfilled, onRejected?: Rejected): Promise {
     let promise = new Promise(noOp);
     this.addPending(promise, onFulfilled, onRejected);
     return promise;
   }
 
-  protected addPending(target: Promise, onFulfilled: Resolve,
-                       onRejected: Reject): void {
+  protected addPending(target: Promise, onFulfilled: Fulfilled,
+                       onRejected: Rejected): void {
     let pending: PendingHandler = [target, onFulfilled, onRejected];
 
     if ( this._state ) {
-      GlobalScheduler.queue(() => {
-        this.settlePending(pending);
-      });
+      GlobalScheduler.queue(() => this.settlePending(pending));
       return;
     }
 
     let pendingLength = this._pendingLength;
     if ( pendingLength === 0 ) {
-      this._pendingHandlers = pending;
+      this._pendingHandler = pending;
       this._pendingLength = 1;
       return;
     }
 
-    if ( this._pendingLength === 1 ) {
-      let pendingHandler = <PendingHandler>this._pendingHandlers;
-      this._pendingHandlers = [pendingHandler, pending];
+    if ( pendingLength === 1 ) {
+      this._pendingHandlers = [this._pendingHandler, pending];
+      this._pendingHandler = undefined;
       this._pendingLength = 2;
       return;
     }
@@ -173,6 +142,35 @@ export default class Promise extends Common {
     }
   }
 
+  private doResolve(executor: Executor): void {
+    let self = this;
+    let done: boolean;
+
+    let tryResult = tryCall(executor, onFulfilled, onRejected);
+    if ( tryResult === TryError ) {
+      if ( done ) {
+        return;
+      }
+      this.reject(tryResult.reason);
+    }
+
+    function onFulfilled(result?: Result): void {
+      if ( done ) {
+        return;
+      }
+      done = true;
+      self.resolve(result);
+    }
+
+    function onRejected(reason?: Reason): void {
+      if ( done ) {
+        return;
+      }
+      done = true;
+      self.reject(reason);
+    }
+  }
+
   private notifyPending(): void {
     let pendingLength = this._pendingLength;
     if ( pendingLength === 0 ) {
@@ -180,9 +178,9 @@ export default class Promise extends Common {
     }
 
     if ( pendingLength === 1 ) {
-      this.settlePending(<PendingHandler>this._pendingHandlers);
+      this.settlePending(<PendingHandler>this._pendingHandler);
       this._pendingLength = 0;
-      this._pendingHandlers = undefined;
+      this._pendingHandler = undefined;
       return;
     }
 

@@ -3,7 +3,7 @@
 "use strict";
 window.welsh = require('./dist');
 
-},{"./dist":9}],2:[function(require,module,exports){
+},{"./dist":6}],2:[function(require,module,exports){
 /*
  * Welsh (Promises, but not really)
  * Licensed under the MIT License
@@ -170,6 +170,71 @@ var Common = (function () {
     function Common(executor) {
         // no-op
     }
+    Common.resolve = function (result) {
+        if (result instanceof this) {
+            return result;
+        }
+        return new this(function (resolve) {
+            resolve(result);
+        });
+    };
+    Common.reject = function (reason) {
+        return new this(function (resolve, reject) {
+            reject(reason);
+        });
+    };
+    Common.fromNode = function (nodeFunction) {
+        var constructor = this;
+        return nodeWrapper;
+        function nodeWrapper() {
+            var wrapperArguments = arguments;
+            return new constructor(function (resolve, reject) {
+                var args = slice.call(wrapperArguments).concat(callback);
+                nodeFunction.apply(null, args);
+                function callback(err) {
+                    if (err) {
+                        reject(err);
+                        return;
+                    }
+                    resolve(slice.call(arguments, 1));
+                }
+            });
+        }
+    };
+    Common.path = function (resultOrArray, path) {
+        return this.resolve(resultOrArray).path(path);
+    };
+    Common.race = function (resultOrArray) {
+        return this.resolve(resultOrArray).race();
+    };
+    Common.all = function (resultOrArray) {
+        return this.resolve(resultOrArray).all();
+    };
+    Common.some = function (resultOrArray, count) {
+        return this.resolve(resultOrArray).some(count);
+    };
+    Common.any = function (resultOrArray) {
+        return this.resolve(resultOrArray).any();
+    };
+    Common.lazy = function (executor) {
+        var resolve;
+        var reject;
+        var called;
+        var deferred = new this(function (_resolve, _reject) {
+            resolve = _resolve;
+            reject = _reject;
+        });
+        var originalThen = Helpers_1.getThenFunction(deferred);
+        deferred.then = function (onFulfilled, onRejected) {
+            if (!called) {
+                deferred.then = originalThen;
+                called = true;
+                executor(resolve, reject);
+            }
+            return originalThen(onFulfilled, onRejected);
+        };
+        return deferred;
+    };
     Common.prototype.isPending = function () {
         return !(this._state && this._state !== State.Resolving);
     };
@@ -273,71 +338,6 @@ var Common = (function () {
     Common.prototype.any = function () {
         return Collection_1.createAny(this);
     };
-    Common.resolve = function (result) {
-        if (result instanceof this) {
-            return result;
-        }
-        return new this(function (resolve) {
-            resolve(result);
-        });
-    };
-    Common.reject = function (reason) {
-        return new this(function (resolve, reject) {
-            reject(reason);
-        });
-    };
-    Common.fromNode = function (nodeFunction) {
-        var constructor = this;
-        return nodeWrapper;
-        function nodeWrapper() {
-            var wrapperArguments = arguments;
-            return new constructor(function (resolve, reject) {
-                var args = slice.call(wrapperArguments).concat(callback);
-                nodeFunction.apply(null, args);
-                function callback(err) {
-                    if (err) {
-                        reject(err);
-                        return;
-                    }
-                    resolve(slice.call(arguments, 1));
-                }
-            });
-        }
-    };
-    Common.path = function (resultOrArray, path) {
-        return this.resolve(resultOrArray).path(path);
-    };
-    Common.race = function (resultOrArray) {
-        return this.resolve(resultOrArray).race();
-    };
-    Common.all = function (resultOrArray) {
-        return this.resolve(resultOrArray).all();
-    };
-    Common.some = function (resultOrArray, count) {
-        return this.resolve(resultOrArray).some(count);
-    };
-    Common.any = function (resultOrArray) {
-        return this.resolve(resultOrArray).any();
-    };
-    Common.lazy = function (executor) {
-        var resolve;
-        var reject;
-        var called;
-        var deferred = new this(function (_resolve, _reject) {
-            resolve = _resolve;
-            reject = _reject;
-        });
-        var originalThen = Helpers_1.getThenFunction(deferred);
-        deferred.then = function (onFulfilled, onRejected) {
-            if (!called) {
-                deferred.then = originalThen;
-                called = true;
-                executor(resolve, reject);
-            }
-            return originalThen(onFulfilled, onRejected);
-        };
-        return deferred;
-    };
     return Common;
 }());
 Object.defineProperty(exports, "__esModule", { value: true });
@@ -357,7 +357,7 @@ function convertUsing(deferred, constructor) {
     });
 }
 
-},{"./Collection":2,"./Deferred":4,"./Helpers":5,"./Promise":6,"./Property":7,"./Scheduler":8}],4:[function(require,module,exports){
+},{"./Collection":2,"./Deferred":4,"./Helpers":5,"./Promise":7,"./Property":8,"./Scheduler":9}],4:[function(require,module,exports){
 /// <reference path="../typings/tsd.d.ts" />
 /*
  * Welsh (Promises, but not really)
@@ -394,7 +394,7 @@ var Deferred = (function (_super) {
             this.reject(new Error("Deferred requires an Executor Function"));
             return;
         }
-        var tryResult = Helpers_1.tryCall(executor, function (result) { _this.resolve(result); }, function (reason) { _this.reject(reason); });
+        var tryResult = Helpers_1.tryCall(executor, function (result) { return _this.resolve(result); }, function (reason) { return _this.reject(reason); });
         if (tryResult === Helpers_1.TryError) {
             this.reject(tryResult.reason);
         }
@@ -404,6 +404,15 @@ var Deferred = (function (_super) {
     };
     Deferred.prototype.reject = function (reason) {
         this.startWith(Common_1.State.Rejected, reason);
+    };
+    Deferred.prototype.then = function (onFulfilled, onRejected) {
+        var pending = new PendingHandler(onFulfilled, onRejected);
+        this._pendingHandlers[this._pendingLength++] = pending;
+        if (this._state && !this._running) {
+            this._running = true;
+            Scheduler_1.GlobalScheduler.queue(this.proceed, this);
+        }
+        return this;
     };
     Deferred.prototype.startWith = function (newState, result) {
         if (this._state) {
@@ -415,15 +424,6 @@ var Deferred = (function (_super) {
             this._running = true;
             Scheduler_1.GlobalScheduler.queue(this.proceed, this);
         }
-    };
-    Deferred.prototype.then = function (onFulfilled, onRejected) {
-        var pending = new PendingHandler(onFulfilled, onRejected);
-        this._pendingHandlers[this._pendingLength++] = pending;
-        if (this._state && !this._running) {
-            this._running = true;
-            Scheduler_1.GlobalScheduler.queue(this.proceed, this);
-        }
-        return this;
     };
     Deferred.prototype.proceed = function () {
         var pendingHandlers = this._pendingHandlers;
@@ -466,13 +466,13 @@ var Deferred = (function (_super) {
         this._pendingLength = 0;
         this._pendingHandlers = [];
         this._running = false;
-        function fulfilledLinker(result) {
-            self.continueWith(Common_1.State.Fulfilled, result);
-            return result;
+        function fulfilledLinker(linkedResult) {
+            self.continueWith(Common_1.State.Fulfilled, linkedResult);
+            return linkedResult;
         }
-        function rejectedLinker(reason) {
-            self.continueWith(Common_1.State.Rejected, reason);
-            throw reason;
+        function rejectedLinker(linkedReason) {
+            self.continueWith(Common_1.State.Rejected, linkedReason);
+            throw linkedReason;
         }
     };
     Deferred.prototype.continueWith = function (newState, result) {
@@ -485,7 +485,7 @@ var Deferred = (function (_super) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.default = Deferred;
 
-},{"./Common":3,"./Helpers":5,"./Scheduler":8}],5:[function(require,module,exports){
+},{"./Common":3,"./Helpers":5,"./Scheduler":9}],5:[function(require,module,exports){
 /*
  * Welsh (Promises, but not really)
  * Licensed under the MIT License
@@ -551,6 +551,20 @@ exports.tryCall = tryCall;
  * @author Thomas S. Bradford (kode4food.it)
  */
 "use strict";
+var Promise_1 = require('./Promise');
+exports.Promise = Promise_1.default;
+var Deferred_1 = require('./Deferred');
+exports.Deferred = Deferred_1.default;
+
+},{"./Deferred":4,"./Promise":7}],7:[function(require,module,exports){
+/*
+ * Welsh (Promises, but not really)
+ * Licensed under the MIT License
+ * see LICENSE.md
+ *
+ * @author Thomas S. Bradford (kode4food.it)
+ */
+"use strict";
 var __extends = (this && this.__extends) || function (d, b) {
     for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p];
     function __() { this.constructor = d; }
@@ -560,7 +574,9 @@ var Common_1 = require('./Common');
 var Helpers_1 = require('./Helpers');
 var Scheduler_1 = require("./Scheduler");
 /* istanbul ignore next */
-function noOp() { }
+function noOp() {
+    "noOp";
+}
 var Promise = (function (_super) {
     __extends(Promise, _super);
     function Promise(executor) {
@@ -604,31 +620,6 @@ var Promise = (function (_super) {
         this._result = reason;
         Scheduler_1.GlobalScheduler.queue(this.notifyPending, this);
     };
-    Promise.prototype.doResolve = function (executor) {
-        var self = this;
-        var done;
-        var tryResult = Helpers_1.tryCall(executor, onFulfilled, onRejected);
-        if (tryResult === Helpers_1.TryError) {
-            if (done) {
-                return;
-            }
-            this.reject(tryResult.reason);
-        }
-        function onFulfilled(result) {
-            if (done) {
-                return;
-            }
-            done = true;
-            self.resolve(result);
-        }
-        function onRejected(reason) {
-            if (done) {
-                return;
-            }
-            done = true;
-            self.reject(reason);
-        }
-    };
     Promise.prototype.then = function (onFulfilled, onRejected) {
         var promise = new Promise(noOp);
         this.addPending(promise, onFulfilled, onRejected);
@@ -638,20 +629,18 @@ var Promise = (function (_super) {
         var _this = this;
         var pending = [target, onFulfilled, onRejected];
         if (this._state) {
-            Scheduler_1.GlobalScheduler.queue(function () {
-                _this.settlePending(pending);
-            });
+            Scheduler_1.GlobalScheduler.queue(function () { return _this.settlePending(pending); });
             return;
         }
         var pendingLength = this._pendingLength;
         if (pendingLength === 0) {
-            this._pendingHandlers = pending;
+            this._pendingHandler = pending;
             this._pendingLength = 1;
             return;
         }
-        if (this._pendingLength === 1) {
-            var pendingHandler = this._pendingHandlers;
-            this._pendingHandlers = [pendingHandler, pending];
+        if (pendingLength === 1) {
+            this._pendingHandlers = [this._pendingHandler, pending];
+            this._pendingHandler = undefined;
             this._pendingLength = 2;
             return;
         }
@@ -693,15 +682,40 @@ var Promise = (function (_super) {
             this.resolve(tryResult);
         }
     };
+    Promise.prototype.doResolve = function (executor) {
+        var self = this;
+        var done;
+        var tryResult = Helpers_1.tryCall(executor, onFulfilled, onRejected);
+        if (tryResult === Helpers_1.TryError) {
+            if (done) {
+                return;
+            }
+            this.reject(tryResult.reason);
+        }
+        function onFulfilled(result) {
+            if (done) {
+                return;
+            }
+            done = true;
+            self.resolve(result);
+        }
+        function onRejected(reason) {
+            if (done) {
+                return;
+            }
+            done = true;
+            self.reject(reason);
+        }
+    };
     Promise.prototype.notifyPending = function () {
         var pendingLength = this._pendingLength;
         if (pendingLength === 0) {
             return;
         }
         if (pendingLength === 1) {
-            this.settlePending(this._pendingHandlers);
+            this.settlePending(this._pendingHandler);
             this._pendingLength = 0;
-            this._pendingHandlers = undefined;
+            this._pendingHandler = undefined;
             return;
         }
         var pendingHandlers = this._pendingHandlers;
@@ -717,7 +731,7 @@ var Promise = (function (_super) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.default = Promise;
 
-},{"./Common":3,"./Helpers":5,"./Scheduler":8}],7:[function(require,module,exports){
+},{"./Common":3,"./Helpers":5,"./Scheduler":9}],8:[function(require,module,exports){
 /*
  * Welsh (Promises, but not really)
  * Licensed under the MIT License
@@ -758,7 +772,7 @@ function resolvePath(instance, path) {
 }
 exports.resolvePath = resolvePath;
 
-},{"./Helpers":5}],8:[function(require,module,exports){
+},{"./Helpers":5}],9:[function(require,module,exports){
 /*
  * Welsh (Promises, but not really)
  * Licensed under the MIT License
@@ -801,7 +815,7 @@ var Scheduler = (function () {
         this._queueLength = queueLength + 2;
         if (!this._isFlushing) {
             this._isFlushing = true;
-            exports.nextTick(function () { _this.flushQueue(); });
+            exports.nextTick(function () { return _this.flushQueue(); });
         }
     };
     Scheduler.prototype.collapseQueue = function () {
@@ -836,18 +850,4 @@ var Scheduler = (function () {
 exports.Scheduler = Scheduler;
 exports.GlobalScheduler = new Scheduler();
 
-},{}],9:[function(require,module,exports){
-/*
- * Welsh (Promises, but not really)
- * Licensed under the MIT License
- * see LICENSE.md
- *
- * @author Thomas S. Bradford (kode4food.it)
- */
-"use strict";
-var Promise_1 = require('./Promise');
-exports.Promise = Promise_1.default;
-var Deferred_1 = require('./Deferred');
-exports.Deferred = Deferred_1.default;
-
-},{"./Deferred":4,"./Promise":6}]},{},[1]);
+},{}]},{},[1]);

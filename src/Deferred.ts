@@ -40,8 +40,8 @@ export default class Deferred extends Common {
 
     let tryResult = tryCall(
       executor,
-      (result?: Result) => { this.resolve(result); },
-      (reason?: Reason) => { this.reject(reason); }
+      (result?: Result) => this.resolve(result),
+      (reason?: Reason) => this.reject(reason)
     );
 
     if ( tryResult === TryError ) {
@@ -57,6 +57,17 @@ export default class Deferred extends Common {
     this.startWith(State.Rejected, reason);
   }
 
+  public then(onFulfilled?: Fulfilled, onRejected?: Rejected): Deferred {
+    let pending = new PendingHandler(onFulfilled, onRejected);
+    this._pendingHandlers[this._pendingLength++] = pending;
+
+    if ( this._state && !this._running ) {
+      this._running = true;
+      GlobalScheduler.queue(this.proceed, this);
+    }
+    return this;
+  }
+
   private startWith(newState: State, result?: ResultOrReason): void {
     if ( this._state ) {
       return;
@@ -67,17 +78,6 @@ export default class Deferred extends Common {
       this._running = true;
       GlobalScheduler.queue(this.proceed, this);
     }
-  }
-
-  public then(onFulfilled?: Fulfilled, onRejected?: Rejected): Deferred {
-    let pending = new PendingHandler(onFulfilled, onRejected);
-    this._pendingHandlers[this._pendingLength++] = pending;
-
-    if ( this._state && !this._running ) {
-      this._running = true;
-      GlobalScheduler.queue(this.proceed, this);
-    }
-    return this;
   }
 
   private proceed(): void {
@@ -126,14 +126,14 @@ export default class Deferred extends Common {
     this._pendingHandlers = [];
     this._running = false;
 
-    function fulfilledLinker(result?: Result): Result {
-      self.continueWith(State.Fulfilled, result);
-      return result;
+    function fulfilledLinker(linkedResult?: Result): Result {
+      self.continueWith(State.Fulfilled, linkedResult);
+      return linkedResult;
     }
 
-    function rejectedLinker(reason?: Reason): Result {
-      self.continueWith(State.Rejected, reason);
-      throw reason;
+    function rejectedLinker(linkedReason?: Reason): Result {
+      self.continueWith(State.Rejected, linkedReason);
+      throw linkedReason;
     }
   }
 

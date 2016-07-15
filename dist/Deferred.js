@@ -34,7 +34,7 @@ var Deferred = (function (_super) {
             this.reject(new Error("Deferred requires an Executor Function"));
             return;
         }
-        var tryResult = Helpers_1.tryCall(executor, function (result) { _this.resolve(result); }, function (reason) { _this.reject(reason); });
+        var tryResult = Helpers_1.tryCall(executor, function (result) { return _this.resolve(result); }, function (reason) { return _this.reject(reason); });
         if (tryResult === Helpers_1.TryError) {
             this.reject(tryResult.reason);
         }
@@ -44,6 +44,15 @@ var Deferred = (function (_super) {
     };
     Deferred.prototype.reject = function (reason) {
         this.startWith(Common_1.State.Rejected, reason);
+    };
+    Deferred.prototype.then = function (onFulfilled, onRejected) {
+        var pending = new PendingHandler(onFulfilled, onRejected);
+        this._pendingHandlers[this._pendingLength++] = pending;
+        if (this._state && !this._running) {
+            this._running = true;
+            Scheduler_1.GlobalScheduler.queue(this.proceed, this);
+        }
+        return this;
     };
     Deferred.prototype.startWith = function (newState, result) {
         if (this._state) {
@@ -55,15 +64,6 @@ var Deferred = (function (_super) {
             this._running = true;
             Scheduler_1.GlobalScheduler.queue(this.proceed, this);
         }
-    };
-    Deferred.prototype.then = function (onFulfilled, onRejected) {
-        var pending = new PendingHandler(onFulfilled, onRejected);
-        this._pendingHandlers[this._pendingLength++] = pending;
-        if (this._state && !this._running) {
-            this._running = true;
-            Scheduler_1.GlobalScheduler.queue(this.proceed, this);
-        }
-        return this;
     };
     Deferred.prototype.proceed = function () {
         var pendingHandlers = this._pendingHandlers;
@@ -106,13 +106,13 @@ var Deferred = (function (_super) {
         this._pendingLength = 0;
         this._pendingHandlers = [];
         this._running = false;
-        function fulfilledLinker(result) {
-            self.continueWith(Common_1.State.Fulfilled, result);
-            return result;
+        function fulfilledLinker(linkedResult) {
+            self.continueWith(Common_1.State.Fulfilled, linkedResult);
+            return linkedResult;
         }
-        function rejectedLinker(reason) {
-            self.continueWith(Common_1.State.Rejected, reason);
-            throw reason;
+        function rejectedLinker(linkedReason) {
+            self.continueWith(Common_1.State.Rejected, linkedReason);
+            throw linkedReason;
         }
     };
     Deferred.prototype.continueWith = function (newState, result) {

@@ -15,7 +15,9 @@ var Common_1 = require('./Common');
 var Helpers_1 = require('./Helpers');
 var Scheduler_1 = require("./Scheduler");
 /* istanbul ignore next */
-function noOp() { }
+function noOp() {
+    "noOp";
+}
 var Promise = (function (_super) {
     __extends(Promise, _super);
     function Promise(executor) {
@@ -59,31 +61,6 @@ var Promise = (function (_super) {
         this._result = reason;
         Scheduler_1.GlobalScheduler.queue(this.notifyPending, this);
     };
-    Promise.prototype.doResolve = function (executor) {
-        var self = this;
-        var done;
-        var tryResult = Helpers_1.tryCall(executor, onFulfilled, onRejected);
-        if (tryResult === Helpers_1.TryError) {
-            if (done) {
-                return;
-            }
-            this.reject(tryResult.reason);
-        }
-        function onFulfilled(result) {
-            if (done) {
-                return;
-            }
-            done = true;
-            self.resolve(result);
-        }
-        function onRejected(reason) {
-            if (done) {
-                return;
-            }
-            done = true;
-            self.reject(reason);
-        }
-    };
     Promise.prototype.then = function (onFulfilled, onRejected) {
         var promise = new Promise(noOp);
         this.addPending(promise, onFulfilled, onRejected);
@@ -93,20 +70,18 @@ var Promise = (function (_super) {
         var _this = this;
         var pending = [target, onFulfilled, onRejected];
         if (this._state) {
-            Scheduler_1.GlobalScheduler.queue(function () {
-                _this.settlePending(pending);
-            });
+            Scheduler_1.GlobalScheduler.queue(function () { return _this.settlePending(pending); });
             return;
         }
         var pendingLength = this._pendingLength;
         if (pendingLength === 0) {
-            this._pendingHandlers = pending;
+            this._pendingHandler = pending;
             this._pendingLength = 1;
             return;
         }
-        if (this._pendingLength === 1) {
-            var pendingHandler = this._pendingHandlers;
-            this._pendingHandlers = [pendingHandler, pending];
+        if (pendingLength === 1) {
+            this._pendingHandlers = [this._pendingHandler, pending];
+            this._pendingHandler = undefined;
             this._pendingLength = 2;
             return;
         }
@@ -148,15 +123,40 @@ var Promise = (function (_super) {
             this.resolve(tryResult);
         }
     };
+    Promise.prototype.doResolve = function (executor) {
+        var self = this;
+        var done;
+        var tryResult = Helpers_1.tryCall(executor, onFulfilled, onRejected);
+        if (tryResult === Helpers_1.TryError) {
+            if (done) {
+                return;
+            }
+            this.reject(tryResult.reason);
+        }
+        function onFulfilled(result) {
+            if (done) {
+                return;
+            }
+            done = true;
+            self.resolve(result);
+        }
+        function onRejected(reason) {
+            if (done) {
+                return;
+            }
+            done = true;
+            self.reject(reason);
+        }
+    };
     Promise.prototype.notifyPending = function () {
         var pendingLength = this._pendingLength;
         if (pendingLength === 0) {
             return;
         }
         if (pendingLength === 1) {
-            this.settlePending(this._pendingHandlers);
+            this.settlePending(this._pendingHandler);
             this._pendingLength = 0;
-            this._pendingHandlers = undefined;
+            this._pendingHandler = undefined;
             return;
         }
         var pendingHandlers = this._pendingHandlers;
