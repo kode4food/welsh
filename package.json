@@ -25,7 +25,7 @@
   "license": "MIT",
   "devDependencies": {
     "browserify": "^13.0.1",
-    "chai": "^3.5.0",
+    "chai": "^4.2.0",
     "gulp": "^3.9.1",
     "gulp-esmangle": "^1.1.1",
     "gulp-inject-string": "^1.1.0",
